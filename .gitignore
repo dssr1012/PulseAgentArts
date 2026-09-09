@@ -3,6 +3,10 @@ node_modules/
 .pnp
 .pnp.js
 
+# Package manager lock & workspace artifacts
+pnpm-lock.yaml
+.pnpmrc
+
 # Build
 dist/
 build/
