@@ -4,21 +4,16 @@
   "private": true,
   "description": "PulseExpends - Family Expense Management Application",
   "scripts": {
-    "dev": "npm run dev -w backend",
-    "dev:all": "npm run dev -ws",
-    "build": "npm run build -ws",
-    "lint": "npm run lint -ws",
-    "test": "npm run test -ws",
-    "test:e2e": "npm run test:e2e -w backend",
-    "prisma:generate": "npm run prisma:generate -w backend",
-    "prisma:migrate": "npm run prisma:migrate -w backend"
+    "install:all": "npm install --prefix backend && npm install --prefix web && npm install --prefix mobile && npm install --prefix mcp-server",
+    "dev": "npm run dev --prefix backend",
+    "dev:all": "npm run dev --prefix backend & npm run dev --prefix web",
+    "build": "npm run build --prefix backend && npm run build --prefix web && npm run build --prefix mcp-server",
+    "lint": "npm run lint --prefix backend && npm run lint --prefix web && npm run lint --prefix mobile",
+    "test": "npm run test --prefix backend && npm run test --prefix web",
+    "test:e2e": "npm run test:e2e --prefix backend",
+    "prisma:generate": "npm run prisma:generate --prefix backend",
+    "prisma:migrate": "npm run prisma:migrate --prefix backend"
   },
-  "workspaces": [
-    "backend",
-    "web",
-    "mobile",
-    "mcp-server"
-  ],
   "engines": {
     "node": ">=22.0.0",
     "npm": ">=10.0.0"
