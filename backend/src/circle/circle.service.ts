@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
+import { Currency } from '@prisma/client';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 
@@ -39,7 +40,7 @@ export class CircleService {
         data: {
           name,
           adminUserId: userId,
-          baseCurrency,
+          baseCurrency: baseCurrency as Currency,
         },
       });
 

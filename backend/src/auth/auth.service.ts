@@ -2,7 +2,8 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
-  LockedException,
+  HttpException,
+  HttpStatus,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
@@ -76,10 +77,13 @@ export class AuthService {
 
     // Check account lockout
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      throw new LockedException({
-        errorCode: 'AUTH_ACCOUNT_LOCKED',
-        message: 'Account temporarily locked. Try again later.',
-      });
+      throw new HttpException(
+        {
+          errorCode: 'AUTH_ACCOUNT_LOCKED',
+          message: 'Account temporarily locked. Try again later.',
+        },
+        HttpStatus.LOCKED,
+      );
     }
 
     // If lockout period expired, reset counter
@@ -122,7 +126,7 @@ export class AuthService {
       .update(dto.refreshToken)
       .digest('hex');
 
-    const storedToken = await this.prisma.refreshToken.findUnique({
+    const storedToken = await this.prisma.refreshToken.findFirst({
       where: { tokenHash },
       include: { user: true },
     });

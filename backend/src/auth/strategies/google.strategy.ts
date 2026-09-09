@@ -30,7 +30,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     };
 
     if (!googleUser.email) {
-      return done(new Error('Google account has no email'), null);
+      return done(new Error('Google account has no email'), false);
     }
 
     done(null, googleUser);

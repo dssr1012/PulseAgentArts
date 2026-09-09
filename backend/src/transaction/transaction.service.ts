@@ -78,6 +78,13 @@ export class TransactionService {
   }
 
   async createIncome(userId: string, circleId: string, dto: CreateIncomeDto) {
+    if (!dto.categoryId) {
+      throw new BadRequestException({
+        errorCode: 'TX_CATEGORY_REQUIRED',
+        message: 'categoryId is required for income transactions',
+      });
+    }
+
     const transaction = await this.prisma.transaction.create({
       data: {
         groupId: circleId,
