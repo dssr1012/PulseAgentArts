@@ -55,9 +55,10 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
+  const host = process.env.HOST || '0.0.0.0';
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`🚀 PulseExpends API running on http://localhost:${port}`);
+  await app.listen(port, host);
+  console.log(`🚀 PulseExpends API running on http://${host}:${port}`);
 }
 
 bootstrap();
