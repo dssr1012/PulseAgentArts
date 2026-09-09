@@ -4,15 +4,23 @@
   "private": true,
   "description": "PulseExpends - Family Expense Management Application",
   "scripts": {
-    "dev": "pnpm --filter backend dev",
-    "dev:all": "pnpm -r --parallel dev",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
-    "test:e2e": "pnpm --filter backend test:e2e"
+    "dev": "npm run dev -w backend",
+    "dev:all": "npm run dev -ws",
+    "build": "npm run build -ws",
+    "lint": "npm run lint -ws",
+    "test": "npm run test -ws",
+    "test:e2e": "npm run test:e2e -w backend",
+    "prisma:generate": "npm run prisma:generate -w backend",
+    "prisma:migrate": "npm run prisma:migrate -w backend"
   },
+  "workspaces": [
+    "backend",
+    "web",
+    "mobile",
+    "mcp-server"
+  ],
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "npm": ">=10.0.0"
   }
 }
