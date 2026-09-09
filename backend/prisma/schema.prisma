@@ -200,7 +200,7 @@ model Transaction {
   group              FamilyGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user               User               @relation(fields: [userId], references: [id], onDelete: SetNull)
   category           Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  anomalyAlert       AnomalyAlert?
+  anomalyAlerts      AnomalyAlert[]
   matchedStatementItems StatementItem[]
 
   @@index([groupId, transactionDate])
@@ -275,6 +275,7 @@ model StatementItem {
 
   statement            CardStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
   matchedTransaction   Transaction?  @relation(fields: [matchedTransactionId], references: [id], onDelete: SetNull)
+  anomalyAlerts        AnomalyAlert[]
 
   @@index([statementId])
   @@index([matchedTransactionId])
