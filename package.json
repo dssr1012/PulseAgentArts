@@ -1,0 +1,18 @@
+{
+  "name": "pulse-expends",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PulseExpends - Family Expense Management Application",
+  "scripts": {
+    "dev": "pnpm --filter backend dev",
+    "dev:all": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter backend test:e2e"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

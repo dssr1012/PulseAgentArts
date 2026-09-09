@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --pulse-blue: 59 130 246;
+    --pulse-red: 239 68 68;
+    --pulse-yellow: 251 191 36;
+    --pulse-emerald: 16 185 129;
+    --pulse-white: 255 255 255;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-white text-gray-900 font-sans;
+  }
+}
+
+@layer components {
+  .balance-card {
+    @apply rounded-xl p-6 shadow-lg transition-transform hover:scale-[1.02];
+  }
+
+  .balance-card-blue {
+    @apply balance-card bg-pulse-blue-500 text-white;
+  }
+
+  .balance-card-red {
+    @apply balance-card bg-pulse-red-500 text-white;
+  }
+
+  .balance-card-emerald {
+    @apply balance-card bg-pulse-emerald-500 text-white;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-pulse-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pulse-blue-600 focus:outline-none focus:ring-2 focus:ring-pulse-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg bg-pulse-red-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pulse-red-600 focus:outline-none focus:ring-2 focus:ring-pulse-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-warning {
+    @apply inline-flex items-center justify-center rounded-lg bg-pulse-yellow-400 px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-pulse-yellow-500 focus:outline-none focus:ring-2 focus:ring-pulse-yellow-400 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-pulse-blue-500 focus:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300;
+  }
+
+  .input-field {
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-pulse-blue-500 focus:outline-none focus:ring-1 focus:ring-pulse-blue-500 disabled:bg-gray-50 disabled:text-gray-500;
+  }
+
+  .select-field {
+    @apply block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-pulse-blue-500 focus:outline-none focus:ring-1 focus:ring-pulse-blue-500;
+  }
+
+  .label-field {
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
+  }
+
+  .card {
+    @apply rounded-xl bg-white p-6 shadow-sm border border-gray-100;
+  }
+
+  .alert-yellow {
+    @apply rounded-lg bg-pulse-yellow-50 border border-pulse-yellow-200 p-4;
+  }
+
+  .alert-red {
+    @apply rounded-lg bg-pulse-red-50 border border-pulse-red-200 p-4;
+  }
+}

@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+.next/
+out/
+.expo/
+.expo-shared/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Uploads
+uploads/
+tmp/
+temp/
+
+# Keys
+keys/*.pem
+
+# Prisma
+prisma/migrations/
+
+# Docker
+pgdata/
+redisdata/
+
+# Mobile
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/build/
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+
+# CodeArts internal
+.arts/
