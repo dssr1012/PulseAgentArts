@@ -206,7 +206,7 @@ model Transaction {
   @@index([groupId, transactionDate])
   @@index([userId])
   @@index([groupId, categoryId])
-  @@index([isPrivate], where: { isPrivate: true })
+  @@index([isPrivate])
   @@map("transactions")
 }
 
@@ -277,7 +277,7 @@ model StatementItem {
   matchedTransaction   Transaction?  @relation(fields: [matchedTransactionId], references: [id], onDelete: SetNull)
 
   @@index([statementId])
-  @@index([matchedTransactionId], where: { matchedTransactionId: { not: null } })
+  @@index([matchedTransactionId])
   @@map("statement_items")
 }
 
