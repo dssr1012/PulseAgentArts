@@ -12,6 +12,15 @@ import { CircleMembershipGuard } from './guards/circle-membership.guard';
 
 const logger = new Logger('AuthModule');
 
+// Google OAuth2 SSO is optional: only register GoogleStrategy when credentials are configured
+const googleProviders = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+  ? [GoogleStrategy]
+  : [];
+
+if (googleProviders.length === 0) {
+  logger.warn('Google OAuth2 SSO is disabled: GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET are not set.');
+}
+
 @Global()
 @Module({
   imports: [
@@ -38,7 +47,7 @@ const logger = new Logger('AuthModule');
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard],
-  exports: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard, JwtModule],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard, ...googleProviders],
+  exports: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard, JwtModule, ...googleProviders],
 })
 export class AuthModule {}

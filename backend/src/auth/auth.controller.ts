@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  HttpException,
   BadRequestException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -70,6 +71,7 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Initiate Google OAuth2 flow' })
   async googleAuth() {
+    this.requireGoogleSso();
     // Guard redirects to Google
   }
 
@@ -78,6 +80,8 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google OAuth2 callback' })
   async googleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    this.requireGoogleSso();
+
     const result = req.user as any;
 
     // Generate a short-lived one-time authorization code
@@ -136,6 +140,18 @@ export class AuthController {
     const refreshToken = req.cookies?.refresh_token;
     await this.authService.logout(userId, refreshToken);
     this.clearRefreshTokenCookie(res);
+  }
+
+  private requireGoogleSso(): void {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      throw new HttpException(
+        {
+          errorCode: 'GOOGLE_SSO_NOT_CONFIGURED',
+          message: 'Google SSO is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable it.',
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
   }
 
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {
