@@ -3,4 +3,3 @@ packages:
   - 'web'
   - 'mobile'
   - 'mcp-server'
-  - 'shared'
