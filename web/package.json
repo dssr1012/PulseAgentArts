@@ -22,7 +22,7 @@
     "framer-motion": "^11.11.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.4",
-    "@headlessui/react": "^1.7.22"
+    "@headlessui/react": "^2.2.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
