@@ -82,7 +82,7 @@ export class AuthService {
           errorCode: 'AUTH_ACCOUNT_LOCKED',
           message: 'Account temporarily locked. Try again later.',
         },
-        HttpStatus.LOCKED,
+        423,
       );
     }
 
