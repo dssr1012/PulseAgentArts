@@ -1,4 +1,4 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module, Global, Logger } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService, ConfigModule } from '@nestjs/config';
@@ -12,6 +12,7 @@ import { CircleMembershipGuard } from './guards/circle-membership.guard';
 
 const logger = new Logger('AuthModule');
 
+@Global()
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
@@ -38,6 +39,6 @@ const logger = new Logger('AuthModule');
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, CircleMembershipGuard, JwtModule],
+  exports: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard, JwtModule],
 })
 export class AuthModule {}
