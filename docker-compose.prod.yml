@@ -44,6 +44,10 @@ services:
       REDIS_PORT: 6379
       JWT_PRIVATE_KEY_PATH: /app/keys/private.pem
       JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      # Allow the public origin through CORS (comma-separated). With the relative
+      # /api/v1 default the browser is same-origin so CORS is not even triggered,
+      # but set this in case an absolute API URL is configured.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://159.138.118.60,http://localhost:3001}
     volumes:
       - ./backend/keys:/app/keys:ro
       - ./backend/uploads:/app/uploads
@@ -54,11 +58,13 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
+      args:
+        # Baked into the Next.js bundle at build time. Relative /api/v1 keeps
+        # requests same-origin through nginx (no CORS, works for every visitor).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
     restart: unless-stopped
     depends_on:
       - backend
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
     ports:
       - "3001:3001"
 

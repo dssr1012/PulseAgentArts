@@ -1,6 +1,10 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
+# NEXT_PUBLIC_* must be present at BUILD time (Next.js inlines them into the bundle).
+ARG NEXT_PUBLIC_API_URL=/api/v1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 COPY package*.json ./
 RUN npm ci
 

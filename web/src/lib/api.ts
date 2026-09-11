@@ -1,7 +1,10 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import type { AuthTokens, ApiError } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// Relative by default so the browser calls same-origin /api/v1 through the
+// nginx reverse proxy (works for every visitor without CORS or localhost issues).
+// Override with NEXT_PUBLIC_API_URL (must be set at BUILD time for Next.js).
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 // In-memory access token storage (XSS-safe, not accessible from localStorage)
 let _accessToken: string | null = null;
