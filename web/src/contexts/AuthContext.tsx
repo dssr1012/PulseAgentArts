@@ -31,17 +31,20 @@ function decodeJwtPayload(token: string): any {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // isLoading starts false: the token is held in memory only, so there is no
+  // async session to restore on mount. Starting true would render the SSR HTML
+  // with all inputs disabled (disabled={isLoading}) and "Signing in..." on the
+  // button; if hydration then fails the page is frozen forever. False is correct.
   const [state, setState] = useState<AuthState>({
     user: null,
-    isLoading: true,
+    isLoading: false,
     isAuthenticated: false,
     error: null,
   });
 
-  // Check for existing session on mount
+  // No async session check on mount: access token is in memory only and is lost
+  // on reload, so the user is always unauthenticated on a fresh page load.
   useEffect(() => {
-    // No localStorage check - access token is in memory only
-    // If we had a session, it would have been set during login/register
     setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
   }, []);
 
