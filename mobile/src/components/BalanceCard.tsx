@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
-import { formatAmountCompact } from '../constants/currencies';
+import { formatAmountCompact } from '../utils/formatters';
 import type { Currency } from '../types';
 
 interface BalanceCardProps {

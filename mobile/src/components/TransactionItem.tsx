@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
-import { formatAmountCompact } from '../constants/currencies';
+import { formatAmountCompact } from '../utils/formatters';
 import { toShortDate } from '../utils/dates';
 import type { Transaction, Category } from '../types';
 

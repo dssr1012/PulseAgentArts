@@ -11,6 +11,7 @@ import {
   RefreshControl,
   StyleSheet,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { useTransactionStore } from '../../store/transactionStore';
 import { Colors } from '../../constants/colors';
@@ -19,6 +20,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import type { Transaction } from '../../types';
 
 export function TransactionListScreen() {
+  const navigation = useNavigation();
   const { user, circleId } = useAuth();
   const {
     transactions,
@@ -53,9 +55,9 @@ export function TransactionListScreen() {
 
   const handleTransactionPress = useCallback(
     (transactionId: string) => {
-      // Navigate to detail (would use navigation prop in real app)
+      (navigation as any).navigate('TransactionDetail', { transactionId });
     },
-    []
+    [navigation]
   );
 
   const renderItem = useCallback(

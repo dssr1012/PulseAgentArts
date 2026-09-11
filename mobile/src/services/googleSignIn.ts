@@ -38,7 +38,7 @@ export async function signIn(): Promise<{ idToken: string; user: GoogleUser }> {
   await GoogleSignin.signIn();
 
   const idToken = await GoogleSignin.getTokens();
-  const currentUser = GoogleSignin.getCurrentUser();
+  const currentUser = GoogleSignin.getCurrentUser() as any;
 
   if (!idToken.idToken || !currentUser) {
     throw new Error('Google Sign-In failed: no ID token received');
@@ -71,7 +71,7 @@ export async function signOut(): Promise<void> {
  */
 export async function isSignedIn(): Promise<boolean> {
   try {
-    return await GoogleSignin.isSignedIn();
+    return await (GoogleSignin as any).isSignedIn();
   } catch {
     return false;
   }

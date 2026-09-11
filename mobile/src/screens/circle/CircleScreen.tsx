@@ -116,7 +116,14 @@ export function CircleScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.noCircleTitle}>No pertenecés a un Círculo Familiar</Text>
-        <TouchableOpacity style={styles.createButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.createButton} onPress={async () => {
+          try {
+            await circlesApi.createCircle({ name: 'Mi Familia', base_currency: 'ARS' });
+            Alert.alert('✅ Círculo Creado', 'Tu círculo familiar fue creado. Cerrá sesión y volvé a entrar para verlo.');
+          } catch (err: any) {
+            Alert.alert('Error', err?.message || 'No se pudo crear el círculo');
+          }
+        }}>
           <Text style={styles.createButtonText}>Crear Círculo Familiar</Text>
         </TouchableOpacity>
       </View>

@@ -32,7 +32,6 @@
       ]
     },
     "plugins": [
-      "expo-router",
       [
         "expo-notifications",
         {
@@ -48,7 +47,7 @@
       ]
     ],
     "extra": {
-      "apiBaseUrl": "https://api.pulseexpends.com/api/v1",
+      "apiBaseUrl": "http://159.138.118.60/api/v1",
       "googleWebClientId": "YOUR_GOOGLE_WEB_CLIENT_ID"
     }
   }

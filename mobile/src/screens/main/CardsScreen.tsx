@@ -11,13 +11,16 @@ import {
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
+  Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import * as cardsApi from '../../api/cards';
 import type { CreditCard } from '../../types';
 
 export function CardsScreen() {
+  const navigation = useNavigation();
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -60,9 +63,7 @@ export function CardsScreen() {
       )}
       <TouchableOpacity
         style={styles.uploadButton}
-        onPress={() => {
-          // Navigate to StatementUpload
-        }}
+        onPress={() => (navigation as any).navigate('StatementUpload', { cardId: item.id })}
       >
         <Text style={styles.uploadButtonText}>📄 Subir Resumen</Text>
       </TouchableOpacity>
@@ -75,7 +76,7 @@ export function CardsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Tarjetas</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.addButton} onPress={() => Alert.alert('Próximamente', 'La creación de tarjetas estará disponible próximamente')}>
           <Text style={styles.addButtonText}>+ Agregar</Text>
         </TouchableOpacity>
       </View>

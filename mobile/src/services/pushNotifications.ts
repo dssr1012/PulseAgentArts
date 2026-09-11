@@ -22,6 +22,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -225,8 +227,9 @@ export async function scheduleCardDueReminders(cards: CreditCard[]): Promise<voi
           },
         },
         trigger: {
+          type: 'date',
           date: reminderDate,
-        },
+        } as any,
       });
     }
 
@@ -243,8 +246,9 @@ export async function scheduleCardDueReminders(cards: CreditCard[]): Promise<voi
           },
         },
         trigger: {
+          type: 'date',
           date: dueDate,
-        },
+        } as any,
       });
     }
   }

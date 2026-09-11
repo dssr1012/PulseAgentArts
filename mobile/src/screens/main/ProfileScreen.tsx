@@ -5,12 +5,14 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { Colors } from '../../constants/colors';
 import { unregisterForPushNotifications } from '../../services/pushNotifications';
 import { stopListener } from '../../services/notificationListener';
 
 export function ProfileScreen() {
+  const navigation = useNavigation();
   const { user, circleId, circleRole, logout } = useAuth();
 
   const handleLogout = () => {
@@ -45,7 +47,7 @@ export function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Círculo Familiar</Text>
         {circleId ? (
-          <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => (navigation as any).navigate('Circle')}>
             <Text style={styles.menuItemIcon}>👨‍👩‍👧‍👦</Text>
             <View style={styles.menuItemContent}>
               <Text style={styles.menuItemTitle}>Mi Círculo</Text>
@@ -56,7 +58,7 @@ export function ProfileScreen() {
             <Text style={styles.menuItemArrow}>→</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => (navigation as any).navigate('Circle')}>
             <Text style={styles.menuItemIcon}>➕</Text>
             <Text style={styles.menuItemTitle}>Crear Círculo Familiar</Text>
           </TouchableOpacity>
@@ -66,7 +68,7 @@ export function ProfileScreen() {
       {/* Notification Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notificaciones</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => (navigation as any).navigate('NotificationSettings')}>
           <Text style={styles.menuItemIcon}>🔔</Text>
           <View style={styles.menuItemContent}>
             <Text style={styles.menuItemTitle}>Configuración de Notificaciones</Text>
@@ -74,7 +76,7 @@ export function ProfileScreen() {
           </View>
           <Text style={styles.menuItemArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => (navigation as any).navigate('PendingList')}>
           <Text style={styles.menuItemIcon}>⏳</Text>
           <View style={styles.menuItemContent}>
             <Text style={styles.menuItemTitle}>Gastos por Confirmar</Text>
@@ -87,14 +89,14 @@ export function ProfileScreen() {
       {/* Other Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>General</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Tasas de Cambio', 'Las tasas se obtienen automáticamente del backend.')}>
           <Text style={styles.menuItemIcon}>💱</Text>
           <View style={styles.menuItemContent}>
             <Text style={styles.menuItemTitle}>Tasas de Cambio</Text>
           </View>
           <Text style={styles.menuItemArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {}}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => (navigation as any).navigate('IrregularExpenses')}>
           <Text style={styles.menuItemIcon}>📊</Text>
           <View style={styles.menuItemContent}>
             <Text style={styles.menuItemTitle}>Gastos Irregulares</Text>

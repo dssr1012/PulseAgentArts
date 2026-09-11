@@ -13,22 +13,22 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { formatAmountCompact } from '../../constants/currencies';
+import { formatAmountCompact } from '../../utils/formatters';
 import * as cardsApi from '../../api/cards';
 import type { StatementPreview, StatementItem } from '../../types';
 
 interface StatementPreviewScreenProps {
-  route: { params: { previewId: string; cardId: string } };
+  route: { params: { previewId: string; cardId: string; preview?: StatementPreview } };
 }
 
 export function StatementPreviewScreen({ route }: StatementPreviewScreenProps) {
-  const { previewId } = route.params;
+  const navigation = useNavigation();
+  const { previewId, preview: initialPreview } = route.params;
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // In a real app, the preview data would be loaded from the upload response
-  // and passed via navigation params or a store
-  const [preview, setPreview] = useState<StatementPreview | null>(null);
+  const [preview, setPreview] = useState<StatementPreview | null>(initialPreview ?? null);
 
   const handleConfirm = async () => {
     Alert.alert(
@@ -138,7 +138,7 @@ export function StatementPreviewScreen({ route }: StatementPreviewScreenProps) {
             <Text style={styles.confirmButtonText}>✅ Confirmar Resumen</Text>
           )}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => (navigation as any).goBack()}>
           <Text style={styles.cancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
       </View>

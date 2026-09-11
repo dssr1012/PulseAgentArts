@@ -10,6 +10,7 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTransactionStore } from '../../store/transactionStore';
@@ -61,17 +62,17 @@ export function DashboardScreen({ navigation }: DashboardScreenProps) {
 
   const handleTransactionPress = useCallback(
     (transactionId: string) => {
-      navigation.navigate('TransactionDetail' as never, { transactionId } as never);
+      (navigation as any).navigate('TransactionDetail', { transactionId });
     },
     [navigation]
   );
 
   const handleAddExpense = useCallback(() => {
-    navigation.navigate('QuickEntry' as never);
+    (navigation as any).navigate('QuickEntry');
   }, [navigation]);
 
   const handleViewPending = useCallback(() => {
-    navigation.navigate('PendingList' as never);
+    (navigation as any).navigate('PendingList');
   }, [navigation]);
 
   const recentTransactions = transactions.slice(0, 5);
@@ -156,7 +157,7 @@ export function DashboardScreen({ navigation }: DashboardScreenProps) {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Gastos Recientes</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Transactions' as never)}
+              onPress={() => (navigation as any).navigate('Transactions')}
             >
               <Text style={styles.viewAll}>Ver todos →</Text>
             </TouchableOpacity>

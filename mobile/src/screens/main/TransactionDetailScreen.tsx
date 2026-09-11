@@ -3,9 +3,10 @@
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { formatAmountCompact } from '../../constants/currencies';
+import { formatAmountCompact } from '../../utils/formatters';
 import { toDisplayDate, toDisplayDateTime } from '../../utils/dates';
 import { PrivateBadge } from '../../components/PrivateBadge';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -20,6 +21,7 @@ interface TransactionDetailScreenProps {
 export function TransactionDetailScreen({ route }: TransactionDetailScreenProps) {
   const { transactionId } = route.params;
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -89,10 +91,26 @@ export function TransactionDetailScreen({ route }: TransactionDetailScreenProps)
       {/* Actions */}
       {isPending && (
         <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.confirmButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.confirmButton} onPress={async () => {
+            try {
+              await expensesApi.confirmExpense(transactionId);
+              Alert.alert('✅ Confirmado', 'El gasto fue confirmado');
+              (navigation as any).goBack();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'No se pudo confirmar');
+            }
+          }}>
             <Text style={styles.confirmButtonText}>✅ Confirmar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.discardButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.discardButton} onPress={async () => {
+            try {
+              await expensesApi.discardExpense(transactionId);
+              Alert.alert('Descartado', 'El gasto fue descartado');
+              (navigation as any).goBack();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'No se pudo descartar');
+            }
+          }}>
             <Text style={styles.discardButtonText}>🗑 Descartar</Text>
           </TouchableOpacity>
         </View>

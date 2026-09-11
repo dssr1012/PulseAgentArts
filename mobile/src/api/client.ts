@@ -6,7 +6,7 @@
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_RETRY_CONFIG } from '../constants/config';
-import * as tokenStorage from './tokenStorage';
+import * as tokenStorage from '../services/tokenStorage';
 import type { AuthTokens, ApiError } from '../types';
 
 // ============================================================

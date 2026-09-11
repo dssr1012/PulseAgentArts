@@ -18,12 +18,17 @@ interface CacheEntry {
  */
 async function computeHash(appName: string, notificationText: string): Promise<string> {
   const input = `${appName}:${notificationText}`;
-  // Use Web Crypto API (available in React Native)
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  // FNV-1a 64-bit hash (pure JS, no native crypto deps)
+  let h1 = 0x811c9dc5;
+  let h2 = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    const c = input.charCodeAt(i);
+    h1 ^= c;
+    h1 = Math.imul(h1, 0x01000193);
+    h2 ^= c + 0x9e;
+    h2 = Math.imul(h2, 0x01000193);
+  }
+  return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
 }
 
 /**

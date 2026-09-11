@@ -38,7 +38,7 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.images,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
         allowsEditing: true,
       });
@@ -87,6 +87,7 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
       navigation.navigate('StatementPreview', {
         previewId: preview.preview_id,
         cardId,
+        preview,
       });
     } catch (err) {
       if (err instanceof PulseExpendsApiError) {
