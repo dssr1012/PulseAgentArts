@@ -13,19 +13,21 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private config: ConfigService,
     private prisma: PrismaService,
   ) {
+    const { key, algorithm } = JwtStrategy.resolveKey(config);
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: JwtStrategy.resolveSecret(config),
+      secretOrKey: key,
+      algorithms: algorithm ? [algorithm] : undefined,
       passReqToCallback: false,
     });
   }
 
-  private static resolveSecret(config: ConfigService): string {
+  private static resolveKey(config: ConfigService): { key: string; algorithm?: string } {
     const publicKeyPath = config.get<string>('JWT_PUBLIC_KEY_PATH');
     if (publicKeyPath) {
       const key = readFileSync(publicKeyPath);
-      if (key) return key;
+      if (key) return { key, algorithm: 'RS256' };
     }
 
     const secret = config.get<string>('JWT_SECRET');
@@ -34,9 +36,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         throw new Error('JWT_SECRET environment variable is required in production');
       }
       new Logger('JwtStrategy').warn('JWT_SECRET is not set. Using insecure default. Do NOT use in production!');
-      return 'pulse-expends-dev-secret';
+      return { key: 'pulse-expends-dev-secret' };
     }
-    return secret;
+    return { key: secret };
   }
 
   async validate(payload: any) {

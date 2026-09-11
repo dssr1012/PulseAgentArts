@@ -12,11 +12,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagg
 import { StatementService } from './statement.service';
 import { ConfirmStatementDto } from './dto/statement.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Statements')
 @Controller('statements')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CircleMembershipGuard)
 @ApiBearerAuth()
 export class StatementController {
   constructor(private readonly statementService: StatementService) {}
@@ -35,7 +36,7 @@ export class StatementController {
 
 @ApiTags('Card Statements')
 @Controller('cards')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CircleMembershipGuard)
 @ApiBearerAuth()
 export class CardStatementController {
   constructor(private readonly statementService: StatementService) {}

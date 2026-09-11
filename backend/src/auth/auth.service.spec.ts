@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import {
   ConflictException,
   UnauthorizedException,
-  LockedException,
+  HttpException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../common/prisma.service';
@@ -64,6 +64,7 @@ describe('AuthService', () => {
             },
             refreshToken: {
               findUnique: jest.fn(),
+              findFirst: jest.fn(),
               create: jest.fn(),
               update: jest.fn(),
               updateMany: jest.fn(),
@@ -235,14 +236,17 @@ describe('AuthService', () => {
       }
     });
 
-    it('should throw LockedException when account is locked', async () => {
+    it('should throw HttpException(423) when account is locked', async () => {
       const lockedUser = {
         ...mockUser,
         lockedUntil: new Date(Date.now() + 30 * 60 * 1000), // 30 min in future
       };
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(lockedUser);
 
-      await expect(service.login(loginDto)).rejects.toThrow(LockedException);
+      await expect(service.login(loginDto)).rejects.toThrow(HttpException);
+      await expect(service.login(loginDto)).rejects.toThrow(
+        expect.objectContaining({ status: 423 }),
+      );
     });
 
     it('should reset lockout counter after lockout period expires', async () => {
@@ -319,7 +323,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         user: mockUser,
       };
-      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(storedToken);
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(storedToken);
       (prisma.familyGroupMember.findUnique as jest.Mock).mockResolvedValue(mockMembership);
 
       const result = await service.refresh({ refreshToken: 'valid-refresh-token' });
@@ -341,7 +345,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         user: mockUser,
       };
-      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(storedToken);
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(storedToken);
 
       await expect(
         service.refresh({ refreshToken: 'revoked-token' }),
@@ -356,7 +360,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() - 1000), // expired
         user: mockUser,
       };
-      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(storedToken);
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(storedToken);
 
       await expect(
         service.refresh({ refreshToken: 'expired-token' }),
@@ -364,7 +368,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for non-existent refresh token', async () => {
-      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.refresh({ refreshToken: 'nonexistent-token' }),

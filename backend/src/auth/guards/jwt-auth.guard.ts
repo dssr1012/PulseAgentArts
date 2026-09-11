@@ -42,7 +42,7 @@ export class JwtAuthGuard implements CanActivate {
         secret,
       });
 
-      request['user'] = payload;
+      request['user'] = { ...payload, id: payload.sub };
     } catch {
       throw new UnauthorizedException({
         errorCode: 'AUTH_INVALID_TOKEN',

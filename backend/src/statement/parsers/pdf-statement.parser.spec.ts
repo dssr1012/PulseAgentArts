@@ -1,18 +1,27 @@
 import { PdfStatementParser } from './pdf-statement.parser';
 
+// Top-level mock with a controllable function — jest.mock is hoisted above imports
+jest.mock('pdf-parse', () => jest.fn());
+
+// Obtain a reference to the mocked pdf-parse function
+const pdfParse = require('pdf-parse') as jest.Mock;
+
 describe('PdfStatementParser', () => {
   let parser: PdfStatementParser;
 
   beforeEach(() => {
     parser = new PdfStatementParser();
+    pdfParse.mockReset();
+  });
+
+  afterEach(() => {
+    pdfParse.mockReset();
   });
 
   describe('parse', () => {
     it('should extract structured data from a PDF buffer', async () => {
-      // Mock pdf-parse module
-      jest.doMock('pdf-parse', () => {
-        return jest.fn().mockResolvedValue({
-          text: `
+      pdfParse.mockResolvedValue({
+        text: `
             Estado de Cuenta
             31/01/2026  15/02/2026
             Total: $50,000.00
@@ -20,7 +29,6 @@ describe('PdfStatementParser', () => {
             15/01/2026  Supermarket X  5000.00
             20/01/2026  Gas Station  3000.00
           `,
-        });
       });
 
       const result = await parser.parse(Buffer.from('fake-pdf'));
@@ -34,13 +42,11 @@ describe('PdfStatementParser', () => {
     });
 
     it('should extract line items from statement text', async () => {
-      jest.doMock('pdf-parse', () => {
-        return jest.fn().mockResolvedValue({
-          text: `
+      pdfParse.mockResolvedValue({
+        text: `
             15/01/2026  Supermarket X  5000.00
             20/01/2026  Gas Station  3000.00
           `,
-        });
       });
 
       const result = await parser.parse(Buffer.from('fake-pdf'));
@@ -50,18 +56,14 @@ describe('PdfStatementParser', () => {
     });
 
     it('should throw error for unparseable PDF', async () => {
-      jest.doMock('pdf-parse', () => {
-        return jest.fn().mockRejectedValue(new Error('Invalid PDF'));
-      });
+      pdfParse.mockRejectedValue(new Error('Invalid PDF'));
 
       await expect(parser.parse(Buffer.from('invalid'))).rejects.toThrow();
     });
 
     it('should default to ARS currency', async () => {
-      jest.doMock('pdf-parse', () => {
-        return jest.fn().mockResolvedValue({
-          text: '31/01/2026  15/02/2026  $1000.00',
-        });
+      pdfParse.mockResolvedValue({
+        text: '31/01/2026  15/02/2026  $1000.00',
       });
 
       const result = await parser.parse(Buffer.from('fake-pdf'));

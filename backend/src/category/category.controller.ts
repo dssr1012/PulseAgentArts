@@ -3,11 +3,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Categories')
 @Controller('categories')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CircleMembershipGuard)
 @ApiBearerAuth()
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}

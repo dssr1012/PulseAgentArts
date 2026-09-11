@@ -3,11 +3,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AnomalyService } from './anomaly.service';
 import { AssociateDto, IrregularQueryDto } from './dto/anomaly.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Irregular Expenses')
 @Controller('expenses/irregular')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CircleMembershipGuard)
 @ApiBearerAuth()
 export class AnomalyController {
   constructor(private readonly anomalyService: AnomalyService) {}

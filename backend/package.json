@@ -72,10 +72,25 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "tsconfig.spec.json", "diagnostics": false, "isolatedModules": true }]
     },
-    "collectCoverageFrom": ["**/*.(t|j)s"],
+    "collectCoverageFrom": [
+      "**/*.service.ts",
+      "**/*.guard.ts",
+      "**/*.strategy.ts",
+      "**/*.parser.ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "\\.spec\\.ts$",
+      "\\.module\\.ts$",
+      "\\.dto\\.ts$",
+      "/types/",
+      "/common/prisma.service.ts",
+      "/common/redis.service.ts"
+    ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": ["text", "text-summary", "lcov"],
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"

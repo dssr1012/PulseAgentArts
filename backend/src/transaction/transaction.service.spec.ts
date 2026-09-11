@@ -49,6 +49,7 @@ describe('TransactionService', () => {
               update: jest.fn(),
               delete: jest.fn(),
               count: jest.fn(),
+              groupBy: jest.fn(),
             },
             category: {
               findFirst: jest.fn(),
@@ -180,6 +181,7 @@ describe('TransactionService', () => {
       const result = await service.createIncome('user-1', 'circle-1', {
         amount: 150000,
         currency: 'ARS',
+        categoryId: 'cat-1',
         incomeDate: '2026-01-15',
       });
 
@@ -357,10 +359,18 @@ describe('TransactionService', () => {
 
   describe('getBalance', () => {
     it('should compute balance from confirmed transactions', async () => {
-      (prisma.transaction.findMany as jest.Mock).mockResolvedValue([
-        { type: 'income', amount: 150000, currency: 'ARS', categoryId: null, isPrivate: false },
-        { type: 'expense', amount: 50000, currency: 'ARS', categoryId: 'cat-1', isPrivate: false },
-      ]);
+      (prisma.transaction.groupBy as jest.Mock)
+        .mockResolvedValueOnce([
+          { type: 'income', _sum: { amount: 150000 } },
+          { type: 'expense', _sum: { amount: 50000 } },
+        ])
+        .mockResolvedValueOnce([
+          { currency: 'ARS', type: 'income', _sum: { amount: 150000 } },
+          { currency: 'ARS', type: 'expense', _sum: { amount: 50000 } },
+        ])
+        .mockResolvedValueOnce([
+          { categoryId: 'cat-1', _sum: { amount: 50000 } },
+        ]);
       (prisma.familyGroup.findUnique as jest.Mock).mockResolvedValue({
         baseCurrency: 'ARS',
       });
@@ -373,9 +383,16 @@ describe('TransactionService', () => {
     });
 
     it('should include private expenses in totals', async () => {
-      (prisma.transaction.findMany as jest.Mock).mockResolvedValue([
-        { type: 'expense', amount: 10000, currency: 'ARS', categoryId: 'cat-1', isPrivate: true },
-      ]);
+      (prisma.transaction.groupBy as jest.Mock)
+        .mockResolvedValueOnce([
+          { type: 'expense', _sum: { amount: 10000 } },
+        ])
+        .mockResolvedValueOnce([
+          { currency: 'ARS', type: 'expense', _sum: { amount: 10000 } },
+        ])
+        .mockResolvedValueOnce([
+          { categoryId: 'cat-1', _sum: { amount: 10000 } },
+        ]);
       (prisma.familyGroup.findUnique as jest.Mock).mockResolvedValue({
         baseCurrency: 'ARS',
       });
@@ -386,10 +403,18 @@ describe('TransactionService', () => {
     });
 
     it('should provide breakdown by currency', async () => {
-      (prisma.transaction.findMany as jest.Mock).mockResolvedValue([
-        { type: 'income', amount: 150000, currency: 'ARS', categoryId: null, isPrivate: false },
-        { type: 'expense', amount: 100, currency: 'USD', categoryId: 'cat-1', isPrivate: false },
-      ]);
+      (prisma.transaction.groupBy as jest.Mock)
+        .mockResolvedValueOnce([
+          { type: 'income', _sum: { amount: 150000 } },
+          { type: 'expense', _sum: { amount: 100 } },
+        ])
+        .mockResolvedValueOnce([
+          { currency: 'ARS', type: 'income', _sum: { amount: 150000 } },
+          { currency: 'USD', type: 'expense', _sum: { amount: 100 } },
+        ])
+        .mockResolvedValueOnce([
+          { categoryId: 'cat-1', _sum: { amount: 100 } },
+        ]);
       (prisma.familyGroup.findUnique as jest.Mock).mockResolvedValue({
         baseCurrency: 'ARS',
       });
@@ -401,7 +426,10 @@ describe('TransactionService', () => {
     });
 
     it('should include staleness indicator when consolidated', async () => {
-      (prisma.transaction.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.transaction.groupBy as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
       (prisma.familyGroup.findUnique as jest.Mock).mockResolvedValue({
         baseCurrency: 'ARS',
       });

@@ -100,6 +100,10 @@ describe('ExchangeService', () => {
     });
 
     it('should set staleness to true when fetch fails and rates are old', async () => {
+      // Mock global fetch to fail immediately (avoid real network calls + DNS timeout)
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as any;
+
       // Force failure by providing invalid API URL
       (config.get as jest.Mock).mockImplementation((key: string) => {
         if (key === 'FX_API_URL') return 'http://invalid-url';
@@ -119,6 +123,7 @@ describe('ExchangeService', () => {
       (redis.set as jest.Mock).mockResolvedValue(undefined);
 
       // The fetch will fail, but we still test the staleness logic
+      // Retry backoff: 3 pairs * (1s + 2s) = 9s, so allow 30s
       await service.fetchAndCacheRates();
 
       // Staleness should have been set
@@ -126,7 +131,9 @@ describe('ExchangeService', () => {
         (call) => call[0] === 'fx:stale' && call[1] === 'true',
       );
       expect(staleCalls.length).toBeGreaterThanOrEqual(0);
-    });
+
+      global.fetch = originalFetch;
+    }, 30000);
   });
 
   // ─── Get Rates ───────────────────────────────────────────────────

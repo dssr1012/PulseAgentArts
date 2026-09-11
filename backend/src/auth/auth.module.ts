@@ -29,6 +29,19 @@ if (googleProviders.length === 0) {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
+        const privateKeyPath = config.get<string>('JWT_PRIVATE_KEY_PATH');
+        const privateKey = privateKeyPath ? readKeyFile(privateKeyPath) : null;
+        if (privateKey) {
+          return {
+            privateKey,
+            signOptions: {
+              algorithm: 'RS256',
+              expiresIn: config.get<string>('JWT_ACCESS_TTL', '24h'),
+              issuer: config.get<string>('JWT_ISSUER', 'pulseexpends'),
+            },
+          };
+        }
+
         const secret = config.get<string>('JWT_SECRET');
         if (!secret) {
           if (config.get<string>('NODE_ENV') === 'production') {
@@ -51,3 +64,11 @@ if (googleProviders.length === 0) {
   exports: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, CircleMembershipGuard, JwtModule, ...googleProviders],
 })
 export class AuthModule {}
+
+function readKeyFile(path: string): string | null {
+  try {
+    return require('fs').readFileSync(path, 'utf8');
+  } catch {
+    return null;
+  }
+}

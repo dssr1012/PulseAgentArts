@@ -18,6 +18,7 @@ jest.mock('fs', () => ({
 }));
 
 jest.mock('path', () => ({
+  ...jest.requireActual('path'),
   join: jest.fn().mockReturnValue('/tmp/test-preview.pdf'),
 }));
 
