@@ -24,6 +24,8 @@ export type AnomalyType = 'amount_discrepancy' | 'orphaned_duplicate';
 
 export type AnomalyResolution = 'associated' | 'edited' | 'discarded';
 
+export type AnomalyAction = 'associate' | 'edit' | 'discard';
+
 export type AnomalyStatus = 'open' | 'resolved';
 
 // ============ Auth Types ============
@@ -254,7 +256,7 @@ export interface AnomalyAlert {
   severity: AnomalySeverity;
   reason: AnomalyType;
   matched_statement_item_id: string | null;
-  available_actions: AnomalyResolution[];
+  available_actions: AnomalyAction[];
   created_at: string;
 }
 

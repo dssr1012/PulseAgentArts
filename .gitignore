@@ -50,11 +50,12 @@ uploads/
 tmp/
 temp/
 
-# Keys
-keys/*.pem
+# Keys (JWT RSA private/public keys — never commit)
+backend/keys/*.pem
+**/keys/*.pem
 
-# Prisma
-prisma/migrations/
+# Prisma (local migration working dir — see note below)
+backend/prisma/migrations/
 
 # Docker
 pgdata/

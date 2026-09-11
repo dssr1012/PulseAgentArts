@@ -7,7 +7,8 @@ import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import type { AnomalyAlert, AnomalySeverity } from '@/types';
 import { Badge } from '@/components/ui/Badge';
-import { LoadingOverlay, EmptyState } from '@/components/ui/Spinner';
+import { LoadingOverlay } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/Tabs';
 import {
   AlertTriangle,
   AlertCircle,

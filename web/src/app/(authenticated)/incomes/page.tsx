@@ -7,7 +7,8 @@ import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import type { Transaction, Category } from '@/types';
 import { Modal } from '@/components/ui/Modal';
-import { LoadingOverlay, EmptyState } from '@/components/ui/Spinner';
+import { LoadingOverlay } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/Tabs';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { Plus, ArrowUpRight, Edit2, Trash2 } from 'lucide-react';
 

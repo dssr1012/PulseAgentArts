@@ -7,7 +7,9 @@ import { apiClient } from '@/lib/api';
 import { formatDate, getTimeUntilExpiry, cn, CURRENCIES } from '@/lib/utils';
 import type { FamilyCircle, CircleDetail, CircleMember, Invitation, Currency } from '@/types';
 import { Modal } from '@/components/ui/Modal';
-import { LoadingOverlay, EmptyState } from '@/components/ui/Spinner';
+import { Badge } from '@/components/ui/Badge';
+import { LoadingOverlay } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/Tabs';
 import {
   Users,
   Plus,

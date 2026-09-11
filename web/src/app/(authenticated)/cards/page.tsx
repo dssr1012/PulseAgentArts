@@ -6,17 +6,16 @@ import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
 import type { CreditCard, StatementPreview, CardType } from '@/types';
 import { Modal } from '@/components/ui/Modal';
-import { LoadingOverlay, EmptyState } from '@/components/ui/Spinner';
+import { LoadingOverlay } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/Tabs';
 import { StatementUploader } from '@/components/cards/StatementUploader';
 import { StatementPreviewComponent } from '@/components/cards/StatementPreview';
 import {
   Plus,
-  CreditCard,
+  CreditCard as CreditCardIcon,
   Trash2,
   Loader2,
   Upload,
-  Visa,
-  Mastercard,
 } from 'lucide-react';
 
 export default function CardsPage() {
@@ -113,7 +112,7 @@ export default function CardsPage() {
 
       {/* PAN/CVV Notice */}
       <div className="alert-yellow flex items-center gap-3" role="alert">
-        <CreditCard className="h-5 w-5 text-pulse-yellow-500 shrink-0" />
+        <CreditCardIcon className="h-5 w-5 text-pulse-yellow-500 shrink-0" />
         <p className="text-sm text-pulse-yellow-800">
           For your security, we never store full card numbers or CVV codes. Only the last 4 digits are saved.
         </p>
@@ -123,7 +122,7 @@ export default function CardsPage() {
         <LoadingOverlay />
       ) : cards.length === 0 ? (
         <EmptyState
-          icon={<CreditCard className="h-12 w-12" />}
+          icon={<CreditCardIcon className="h-12 w-12" />}
           title="No cards registered"
           description="Add a credit card to start uploading statements."
           action={{ label: 'Add Card', onClick: () => setShowAddModal(true) }}
@@ -134,7 +133,7 @@ export default function CardsPage() {
             <div key={card.id} className="card p-5">
               <div className="flex items-start justify-between mb-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-pulse-blue-500 to-pulse-blue-700 flex items-center justify-center shadow-sm">
-                  <CreditCard className="h-6 w-6 text-white" />
+                  <CreditCardIcon className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
                   {card.card_type}

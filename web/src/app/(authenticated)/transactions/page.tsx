@@ -8,7 +8,8 @@ import { formatCurrency, formatDate, cn, CURRENCIES } from '@/lib/utils';
 import type { Transaction, Category, TransactionQuery, Currency } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
-import { LoadingOverlay, EmptyState } from '@/components/ui/Spinner';
+import { LoadingOverlay } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/Tabs';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import {

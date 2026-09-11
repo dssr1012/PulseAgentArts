@@ -6,7 +6,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
 import type { Category } from '@/types';
 import { Modal } from '@/components/ui/Modal';
-import { LoadingOverlay, EmptyState } from '@/components/ui/Spinner';
+import { LoadingOverlay } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/Tabs';
 import { Plus, Tag, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function CategoriesPage() {
