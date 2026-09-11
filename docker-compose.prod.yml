@@ -62,6 +62,8 @@ services:
         # Baked into the Next.js bundle at build time. Relative /api/v1 keeps
         # requests same-origin through nginx (no CORS, works for every visitor).
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
+        # Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable the "Continue with Google" button.
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     depends_on:
       - backend
