@@ -47,7 +47,15 @@ class ApiClient {
       async (error: AxiosError<ApiError>) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Don't attempt token refresh for auth endpoints — a 401 here means
+        // invalid credentials, not an expired token. Let it fall through to
+        // normalizeError so the UI can display the message.
+        const isAuthEndpoint =
+          originalRequest.url?.startsWith('/auth/login') ||
+          originalRequest.url?.startsWith('/auth/register') ||
+          originalRequest.url?.startsWith('/auth/refresh');
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
@@ -103,7 +111,19 @@ class ApiClient {
 
   private normalizeError(error: AxiosError<ApiError>): ApiError {
     if (error.response?.data) {
-      return error.response.data;
+      const data = error.response.data as unknown as Record<string, unknown>;
+      // NestJS can return message as string[] (validation) or string;
+      // flatten to a single string so the UI can render it directly.
+      const rawMessage = data.message;
+      const message = Array.isArray(rawMessage)
+        ? rawMessage.join(', ')
+        : (rawMessage as string) || 'An unexpected error occurred';
+      return {
+        code: ((data.errorCode as string) || (data.code as string) || 'AUTH_INVALID_CREDENTIALS') as ApiError['code'],
+        message,
+        trace_id: (data.traceId as string) || (data.trace_id as string) || '',
+        status: error.response.status,
+      };
     }
     return {
       code: 'AUTH_INVALID_CREDENTIALS' as const,
