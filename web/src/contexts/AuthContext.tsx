@@ -48,20 +48,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
   }, []);
 
-  const handleAuthSuccess = useCallback((response: { accessToken: string; user: Record<string, unknown> }) => {
-    apiClient.setAccessToken(response.accessToken);
-    // Backend returns camelCase fields; map to the snake_case User type
-    const u = response.user;
+  const handleAuthSuccess = useCallback((response: Record<string, unknown>) => {
+    // After camelToSnake conversion, accessToken → access_token
+    const accessToken = (response.access_token ?? response.accessToken) as string;
+    apiClient.setAccessToken(accessToken);
+    const u = (response.user ?? {}) as Record<string, unknown>;
     setState({
       user: {
         id: u.id as string,
         email: u.email as string,
-        given_name: (u.givenName ?? u.given_name ?? '') as string,
-        picture_url: (u.pictureUrl ?? u.picture_url ?? null) as string | null,
-        auth_provider: (u.authProvider ?? u.auth_provider ?? 'traditional') as User['auth_provider'],
-        circle_id: (u.circleId ?? u.circle_id ?? null) as string | null,
-        circle_role: (u.role ?? u.circle_role ?? null) as User['circle_role'],
-        created_at: (u.createdAt ?? u.created_at ?? '') as string,
+        given_name: (u.given_name ?? u.givenName ?? '') as string,
+        picture_url: (u.picture_url ?? u.pictureUrl ?? null) as string | null,
+        auth_provider: (u.auth_provider ?? u.authProvider ?? 'traditional') as User['auth_provider'],
+        circle_id: (u.circle_id ?? u.circleId ?? null) as string | null,
+        circle_role: (u.circle_role ?? u.role ?? null) as User['circle_role'],
+        created_at: (u.created_at ?? u.createdAt ?? '') as string,
       },
       isLoading: false,
       isAuthenticated: true,
