@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
@@ -32,7 +32,7 @@ export default function TransactionsPage() {
   const { addToast } = useToast();
   const searchParams = useSearchParams();
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -45,7 +45,8 @@ export default function TransactionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'expense' | 'income'>('expense');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const hasFetched = useRef(false);
+
+  const LIMIT = 20;
 
   // Check for query param action
   useEffect(() => {
@@ -63,26 +64,70 @@ export default function TransactionsPage() {
     if (!user?.circle_id) { setIsLoading(false); return; }
     setIsLoading(true);
     try {
-      const [expensesData, categoriesData] = await Promise.all([
-        apiClient.getExpenses({ ...filters, page, search: searchQuery || undefined }),
+      const [expensesData, incomesData, categoriesData] = await Promise.all([
+        apiClient.getExpenses({ ...filters, limit: 100 }),
+        apiClient.getIncomes({ ...filters, limit: 100 }),
         apiClient.getCategories(user.circle_id),
       ]);
-      setTransactions(expensesData.data || []);
-      setTotalPages(expensesData.total_pages || 1);
-      setTotal(expensesData.total || 0);
+      const combined = [
+        ...(expensesData.data || []),
+        ...(incomesData.data || []),
+      ].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+
+      setAllTransactions(combined);
+      setTotal(combined.length);
+      setTotalPages(Math.max(1, Math.ceil(combined.length / LIMIT)));
       setCategories(categoriesData);
     } catch {
       addToast('error', 'Failed to load transactions.');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.circle_id, filters, page, searchQuery, addToast]);
+  }, [user?.circle_id, filters, addToast]);
 
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    fetchData();
-  }, [fetchData]);
+    let cancelled = false;
+
+    const doFetch = async () => {
+      if (!user?.circle_id) { if (!cancelled) setIsLoading(false); return; }
+      if (!cancelled) setIsLoading(true);
+      try {
+        const [expensesData, incomesData, categoriesData] = await Promise.all([
+          apiClient.getExpenses({ ...filters, limit: 100 }),
+          apiClient.getIncomes({ ...filters, limit: 100 }),
+          apiClient.getCategories(user.circle_id),
+        ]);
+        if (cancelled) return;
+        const combined = [
+          ...(expensesData.data || []),
+          ...(incomesData.data || []),
+        ].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+
+        setAllTransactions(combined);
+        setTotal(combined.length);
+        setTotalPages(Math.max(1, Math.ceil(combined.length / LIMIT)));
+        setCategories(categoriesData);
+      } catch {
+        if (!cancelled) addToast('error', 'Failed to load transactions.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    doFetch();
+    return () => { cancelled = true; };
+  }, [user?.circle_id, filters, addToast]);
+
+  const filteredTransactions = searchQuery
+    ? allTransactions.filter(t =>
+        (t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         t.merchant_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : allTransactions;
+
+  const transactions = filteredTransactions.slice((page - 1) * LIMIT, page * LIMIT);
+
+  useEffect(() => { setPage(1); }, [filters, searchQuery]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this transaction?')) return;
@@ -107,7 +152,7 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-sm text-gray-500 mt-1">{total} total transactions</p>
+          <p className="text-sm text-gray-500 mt-1">{filteredTransactions.length} total transactions</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -244,7 +289,7 @@ export default function TransactionsPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Page {page} of {totalPages}
+              Page {page} of {Math.max(1, Math.ceil(filteredTransactions.length / LIMIT))}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -256,8 +301,8 @@ export default function TransactionsPage() {
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
+                onClick={() => setPage(Math.min(Math.max(1, Math.ceil(filteredTransactions.length / LIMIT)), page + 1))}
+                disabled={page >= Math.ceil(filteredTransactions.length / LIMIT)}
                 className="btn-ghost disabled:opacity-50"
                 aria-label="Next page"
               >

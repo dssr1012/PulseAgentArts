@@ -287,12 +287,35 @@ class ApiClient {
   }
 
   async getExpenses(params?: Record<string, unknown>) {
-    const response = await this.client.get('/expenses', { params });
+    const query = this.convertQueryParams(params);
+    const response = await this.client.get('/expenses', { params: query });
     const data = response.data as { data?: unknown[]; total?: number; total_pages?: number; page?: number; limit?: number };
     if (data && Array.isArray(data.data)) {
       data.data = data.data.map((item) => this.flattenTransaction(item as Record<string, unknown>));
     }
     return data as any;
+  }
+
+  async getIncomes(params?: Record<string, unknown>) {
+    const query = this.convertQueryParams(params);
+    const response = await this.client.get('/incomes', { params: query });
+    const data = response.data as { data?: unknown[]; total?: number; total_pages?: number; page?: number; limit?: number };
+    if (data && Array.isArray(data.data)) {
+      data.data = data.data.map((item) => this.flattenTransaction(item as Record<string, unknown>));
+    }
+    return data as any;
+  }
+
+  private convertQueryParams(params?: Record<string, unknown>): Record<string, unknown> {
+    if (!params) return {};
+    const mapped: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null || value === '') continue;
+      const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+      if (camelKey === 'type' || camelKey === 'search') continue;
+      mapped[camelKey] = value;
+    }
+    return mapped;
   }
 
   async createExpense(data: Record<string, unknown>) {

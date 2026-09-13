@@ -32,15 +32,24 @@ export default function DashboardPage() {
       }
 
       try {
-        const [balanceData, expensesData, categoriesData, anomalyData] = await Promise.allSettled([
+        const [balanceData, expensesData, incomesData, categoriesData, anomalyData] = await Promise.allSettled([
           apiClient.getBalance(user.circle_id, showConsolidated),
           apiClient.getExpenses({ limit: 10, page: 1 }),
+          apiClient.getIncomes({ limit: 10, page: 1 }),
           apiClient.getCategories(user.circle_id),
           apiClient.getIrregularExpenses({ limit: 1, page: 1 }),
         ]);
 
         if (balanceData.status === 'fulfilled') setBalance(balanceData.value);
-        if (expensesData.status === 'fulfilled') setTransactions(expensesData.value.data || []);
+        if (expensesData.status === 'fulfilled' && incomesData.status === 'fulfilled') {
+          const combined = [
+            ...(expensesData.value.data || []),
+            ...(incomesData.value.data || []),
+          ].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()).slice(0, 10);
+          setTransactions(combined);
+        } else if (expensesData.status === 'fulfilled') {
+          setTransactions(expensesData.value.data || []);
+        }
         if (categoriesData.status === 'fulfilled') setCategories(categoriesData.value);
         if (anomalyData.status === 'fulfilled') setAnomalyCount(anomalyData.value.total || 0);
       } catch {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
@@ -20,17 +20,16 @@ export default function IncomesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const hasFetched = useRef(false);
 
   const fetchData = useCallback(async () => {
     if (!user?.circle_id) { setIsLoading(false); return; }
     setIsLoading(true);
     try {
-      const [expensesData, categoriesData] = await Promise.all([
-        apiClient.getExpenses({ type: 'income', limit: 50 }),
+      const [incomesData, categoriesData] = await Promise.all([
+        apiClient.getIncomes({ limit: 50 }),
         apiClient.getCategories(user.circle_id),
       ]);
-      setIncomes(expensesData.data || []);
+      setIncomes(incomesData.data || []);
       setCategories(categoriesData);
     } catch {
       addToast('error', 'Failed to load incomes.');
@@ -40,10 +39,30 @@ export default function IncomesPage() {
   }, [user?.circle_id, addToast]);
 
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    fetchData();
-  }, [fetchData]);
+    let cancelled = false;
+
+    const doFetch = async () => {
+      if (!user?.circle_id) { if (!cancelled) setIsLoading(false); return; }
+      if (!cancelled) setIsLoading(true);
+      try {
+        const [incomesData, categoriesData] = await Promise.all([
+          apiClient.getIncomes({ limit: 50 }),
+          apiClient.getCategories(user.circle_id),
+        ]);
+        if (!cancelled) {
+          setIncomes(incomesData.data || []);
+          setCategories(categoriesData);
+        }
+      } catch {
+        if (!cancelled) addToast('error', 'Failed to load incomes.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    doFetch();
+    return () => { cancelled = true; };
+  }, [user?.circle_id, addToast]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this income record?')) return;
