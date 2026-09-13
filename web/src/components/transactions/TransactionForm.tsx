@@ -47,7 +47,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
         return;
       }
 
-      if (!categoryId && type === 'expense') {
+      if (!categoryId) {
         addToast('warning', 'Please select a category.');
         setIsSubmitting(false);
         return;
@@ -103,11 +103,18 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           <label htmlFor="amount" className="label-field">Amount</label>
           <input
             id="amount"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^0-9.]/g, '');
+              const parts = sanitized.split('.');
+              if (parts.length > 2) {
+                setAmount(parts[0] + '.' + parts.slice(1).join(''));
+              } else {
+                setAmount(sanitized);
+              }
+            }}
             className="input-field text-lg font-semibold"
             placeholder="0.00"
             required
@@ -132,26 +139,24 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       </div>
 
       {/* Category */}
-      {type === 'expense' && (
-        <div>
-          <label htmlFor="category" className="label-field">Category</label>
-          <select
-            id="category"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="select-field"
-            required
-            disabled={isSubmitting}
-          >
-            <option value="">Select a category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name} {cat.is_default ? '(default)' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      <div>
+        <label htmlFor="category" className="label-field">Category</label>
+        <select
+          id="category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="select-field"
+          required
+          disabled={isSubmitting}
+        >
+          <option value="">Select a category</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name} {cat.is_default ? '(default)' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Description */}
       <div>

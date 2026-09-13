@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
@@ -45,6 +45,7 @@ export default function TransactionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'expense' | 'income'>('expense');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const hasFetched = useRef(false);
 
   // Check for query param action
   useEffect(() => {
@@ -78,6 +79,8 @@ export default function TransactionsPage() {
   }, [user?.circle_id, filters, page, searchQuery, addToast]);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     fetchData();
   }, [fetchData]);
 
