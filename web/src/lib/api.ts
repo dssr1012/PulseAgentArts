@@ -283,14 +283,15 @@ class ApiClient {
   }
 
   // ============ Category API ============
+  // Backend gets circleId from JWT, not from URL
 
-  async getCategories(circleId: string) {
-    const response = await this.client.get(`/circles/${circleId}/categories`);
+  async getCategories(_circleId?: string) {
+    const response = await this.client.get('/categories');
     return response.data;
   }
 
-  async createCategory(circleId: string, data: { name: string; icon?: string }) {
-    const response = await this.client.post(`/circles/${circleId}/categories`, data);
+  async createCategory(_circleId: string, data: { name: string; icon?: string }) {
+    const response = await this.client.post('/categories', data);
     return response.data;
   }
 
