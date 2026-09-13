@@ -27,7 +27,7 @@ class ApiClient {
   }
 
   private setupInterceptors() {
-    // Request interceptor: inject JWT Bearer token
+    // Request interceptor: inject JWT Bearer token + convert body to camelCase
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         const token = this.getAccessToken();
@@ -36,6 +36,10 @@ class ApiClient {
         }
         // Add correlation ID
         config.headers['X-Correlation-ID'] = this.generateCorrelationId();
+        // Frontend uses snake_case; backend expects camelCase — convert JSON bodies
+        if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
+          config.data = this.snakeToCamel(config.data);
+        }
         return config;
       },
       (error) => Promise.reject(error)
@@ -48,7 +52,8 @@ class ApiClient {
         // so callers get the inner data directly via response.data.
         const body = response.data;
         if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
-          response.data = body.data;
+          // Backend uses camelCase; frontend types use snake_case — convert
+          response.data = this.camelToSnake(body.data);
         }
         return response;
       },
@@ -118,6 +123,34 @@ class ApiClient {
     })();
 
     return this.refreshPromise;
+  }
+
+  private camelToSnake(obj: unknown): unknown {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map((item) => this.camelToSnake(item));
+    if (typeof obj === 'object') {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+        const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+        result[snakeKey] = this.camelToSnake(value);
+      }
+      return result;
+    }
+    return obj;
+  }
+
+  private snakeToCamel(obj: unknown): unknown {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map((item) => this.snakeToCamel(item));
+    if (typeof obj === 'object') {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+        const camelKey = key.replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase());
+        result[camelKey] = this.snakeToCamel(value);
+      }
+      return result;
+    }
+    return obj;
   }
 
   private normalizeError(error: AxiosError<ApiError>): ApiError {

@@ -48,10 +48,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
   }, []);
 
-  const handleAuthSuccess = useCallback((response: { accessToken: string; user: User }) => {
+  const handleAuthSuccess = useCallback((response: { accessToken: string; user: Record<string, unknown> }) => {
     apiClient.setAccessToken(response.accessToken);
+    // Backend returns camelCase fields; map to the snake_case User type
+    const u = response.user;
     setState({
-      user: response.user,
+      user: {
+        id: u.id as string,
+        email: u.email as string,
+        given_name: (u.givenName ?? u.given_name ?? '') as string,
+        picture_url: (u.pictureUrl ?? u.picture_url ?? null) as string | null,
+        auth_provider: (u.authProvider ?? u.auth_provider ?? 'traditional') as User['auth_provider'],
+        circle_id: (u.circleId ?? u.circle_id ?? null) as string | null,
+        circle_role: (u.role ?? u.circle_role ?? null) as User['circle_role'],
+        created_at: (u.createdAt ?? u.created_at ?? '') as string,
+      },
       isLoading: false,
       isAuthenticated: true,
       error: null,
@@ -215,12 +226,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user: {
             id: payload.sub,
             email: payload.email || prev.user?.email || '',
-            given_name: payload.given_name || prev.user?.given_name || '',
-            picture_url: payload.picture || prev.user?.picture_url || null,
-            auth_provider: payload.auth_provider || prev.user?.auth_provider || 'traditional',
-            circle_id: payload.circle_id || prev.user?.circle_id || null,
-            circle_role: payload.role || prev.user?.circle_role || null,
-            created_at: payload.created_at || prev.user?.created_at || '',
+            given_name: payload.givenName || payload.given_name || prev.user?.given_name || '',
+            picture_url: payload.picture || payload.pictureUrl || prev.user?.picture_url || null,
+            auth_provider: payload.authProvider || payload.auth_provider || prev.user?.auth_provider || 'traditional',
+            circle_id: payload.circleId || payload.circle_id || prev.user?.circle_id || null,
+            circle_role: payload.role || payload.circleRole || prev.user?.circle_role || null,
+            created_at: payload.createdAt || payload.created_at || prev.user?.created_at || '',
           },
         }));
       } else {
