@@ -193,6 +193,19 @@ class ApiClient {
     return response.data;
   }
 
+  async forgotPassword(email: string) {
+    const response = await this.client.post('/auth/forgot-password', { email });
+    return response.data;
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    const response = await this.client.post('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return response.data;
+  }
+
   async exchangeAuthCode(code: string) {
     const response = await this.client.post('/auth/exchange', { code });
     return response.data;

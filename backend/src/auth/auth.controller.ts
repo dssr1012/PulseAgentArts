@@ -16,7 +16,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, RefreshDto, ExchangeAuthCodeDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, RefreshDto, ExchangeAuthCodeDto, ForgotPasswordDto, ChangePasswordDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { IsPublic } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -140,6 +140,28 @@ export class AuthController {
     const refreshToken = req.cookies?.refresh_token;
     await this.authService.logout(userId, refreshToken);
     this.clearRefreshTokenCookie(res);
+  }
+
+  @Post('forgot-password')
+  @IsPublic()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a password reset' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const result = await this.authService.forgotPassword(dto);
+    return { message: 'If the email exists, a temporary password has been sent.', ...result };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password (required after reset)' })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(userId, dto);
+    return { message: 'Password changed successfully.' };
   }
 
   private requireGoogleSso(): void {

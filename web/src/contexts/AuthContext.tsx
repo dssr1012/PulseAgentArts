@@ -48,33 +48,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
   }, []);
 
-  const handleAuthSuccess = useCallback((response: Record<string, unknown>) => {
+  const handleAuthSuccess = useCallback((response: Record<string, unknown>): User => {
     // After camelToSnake conversion, accessToken → access_token
     const accessToken = (response.access_token ?? response.accessToken) as string;
     apiClient.setAccessToken(accessToken);
     const u = (response.user ?? {}) as Record<string, unknown>;
+    const user: User = {
+      id: u.id as string,
+      email: u.email as string,
+      given_name: (u.given_name ?? u.givenName ?? '') as string,
+      picture_url: (u.picture_url ?? u.pictureUrl ?? null) as string | null,
+      auth_provider: (u.auth_provider ?? u.authProvider ?? 'traditional') as User['auth_provider'],
+      circle_id: (u.circle_id ?? u.circleId ?? null) as string | null,
+      circle_role: (u.circle_role ?? u.role ?? null) as User['circle_role'],
+      created_at: (u.created_at ?? u.createdAt ?? '') as string,
+      must_change_password: (u.must_change_password ?? u.mustChangePassword ?? false) as boolean,
+    };
     setState({
-      user: {
-        id: u.id as string,
-        email: u.email as string,
-        given_name: (u.given_name ?? u.givenName ?? '') as string,
-        picture_url: (u.picture_url ?? u.pictureUrl ?? null) as string | null,
-        auth_provider: (u.auth_provider ?? u.authProvider ?? 'traditional') as User['auth_provider'],
-        circle_id: (u.circle_id ?? u.circleId ?? null) as string | null,
-        circle_role: (u.circle_role ?? u.role ?? null) as User['circle_role'],
-        created_at: (u.created_at ?? u.createdAt ?? '') as string,
-      },
+      user,
       isLoading: false,
       isAuthenticated: true,
       error: null,
     });
+    return user;
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const response = await apiClient.login(email, password);
-      handleAuthSuccess(response);
+      return handleAuthSuccess(response);
     } catch (err) {
       const apiError = err as ApiError;
       setState((prev) => ({
@@ -233,6 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             circle_id: payload.circleId || payload.circle_id || prev.user?.circle_id || null,
             circle_role: payload.role || payload.circleRole || prev.user?.circle_role || null,
             created_at: payload.createdAt || payload.created_at || prev.user?.created_at || '',
+            must_change_password: payload.mustChangePassword || payload.must_change_password || prev.user?.must_change_password || false,
           },
         }));
       } else {

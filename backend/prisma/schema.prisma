@@ -95,6 +95,7 @@ model User {
   authProvider         AuthProvider @default(traditional) @map("auth_provider")
   failedLoginAttempts  Int       @default(0) @map("failed_login_attempts")
   lockedUntil          DateTime? @map("locked_until")
+  mustChangePassword   Boolean   @default(false) @map("must_change_password")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

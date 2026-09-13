@@ -29,9 +29,9 @@ export default function LoginPage() {
     }
 
     try {
-      await login(email, password);
+      const user = await login(email, password);
       addToast('success', 'Welcome back!');
-      router.push('/dashboard');
+      router.push(user.must_change_password ? '/change-password' : '/dashboard');
     } catch {
       // Error is handled by auth context
     }
@@ -134,9 +134,17 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="label-field">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="label-field">
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-medium text-pulse-blue-500 hover:text-pulse-blue-600"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   id="password"

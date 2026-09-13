@@ -11,9 +11,10 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../common/prisma.service';
 import { RedisService } from '../common/redis.service';
-import { RegisterDto, LoginDto, RefreshDto, AuthResponseDto, UserResponseDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, RefreshDto, AuthResponseDto, UserResponseDto, ForgotPasswordDto, ChangePasswordDto } from './dto/auth.dto';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AuthService {
@@ -214,6 +215,88 @@ export class AuthService {
     });
   }
 
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ tempPassword?: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user || user.authProvider === 'google_sso') {
+      return {};
+    }
+
+    const tempPassword = crypto.randomBytes(6).toString('base64url').slice(0, 12) + 'A1';
+    const passwordHash = await argon2.hash(tempPassword, {
+      type: argon2.argon2id,
+      timeCost: this.config.get<number>('ARGON2_TIME_COST', 3),
+      memoryCost: this.config.get<number>('ARGON2_MEMORY_COST', 65536),
+      parallelism: this.config.get<number>('ARGON2_PARALLELISM', 4),
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: true, failedLoginAttempts: 0, lockedUntil: null },
+    });
+
+    const smtpHost = this.config.get<string>('SMTP_HOST');
+    if (smtpHost) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: this.config.get<number>('SMTP_PORT', 587),
+          secure: this.config.get<boolean>('SMTP_SECURE', false),
+          auth: {
+            user: this.config.get<string>('SMTP_USER'),
+            pass: this.config.get<string>('SMTP_PASS'),
+          },
+        });
+        await transporter.sendMail({
+          from: this.config.get<string>('EMAIL_FROM', 'noreply@pulseexpends.com'),
+          to: user.email,
+          subject: 'PulseExpends - Password Reset',
+          text: `Your temporary password is: ${tempPassword}\n\nPlease log in and change it immediately.`,
+          html: `<p>Your temporary password is: <strong>${tempPassword}</strong></p><p>Please log in and change it immediately.</p>`,
+        });
+      } catch (err) {
+        this.logger.error(`Failed to send password reset email: ${(err as Error).message}`);
+      }
+    }
+
+    this.logger.log(`Password reset for ${user.email}: ${tempPassword}`);
+    return { tempPassword };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException({
+        errorCode: 'AUTH_INVALID_CREDENTIALS',
+        message: 'User not found',
+      });
+    }
+
+    const valid = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!valid) {
+      throw new UnauthorizedException({
+        errorCode: 'AUTH_INVALID_CREDENTIALS',
+        message: 'Current password is incorrect',
+      });
+    }
+
+    const passwordHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id,
+      timeCost: this.config.get<number>('ARGON2_TIME_COST', 3),
+      memoryCost: this.config.get<number>('ARGON2_MEMORY_COST', 65536),
+      parallelism: this.config.get<number>('ARGON2_PARALLELISM', 4),
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false },
+    });
+
+    this.logger.log(`Password changed for user: ${user.email}`);
+  }
+
   private async handleFailedLogin(user: any): Promise<void> {
     const newAttempts = user.failedLoginAttempts + 1;
     const lockoutThreshold = this.config.get<number>('ACCOUNT_LOCKOUT_THRESHOLD', 5);
@@ -291,6 +374,7 @@ export class AuthService {
       authProvider: user.authProvider,
       circleId: membership?.groupId || null,
       role: membership?.role || null,
+      mustChangePassword: user.mustChangePassword || false,
     };
   }
 

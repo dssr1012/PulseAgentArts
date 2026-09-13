@@ -39,6 +39,7 @@ export interface User {
   circle_id: string | null;
   circle_role: CircleRole | null;
   created_at: string;
+  must_change_password: boolean;
 }
 
 export interface AuthTokens {

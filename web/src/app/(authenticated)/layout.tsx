@@ -11,7 +11,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -20,11 +20,21 @@ export default function DashboardLayout({
     }
   }, [isLoading, isAuthenticated, router]);
 
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.must_change_password) {
+      router.push('/change-password');
+    }
+  }, [isLoading, isAuthenticated, user?.must_change_password, router]);
+
   if (isLoading) {
     return <LoadingPage />;
   }
 
   if (!isAuthenticated) {
+    return null;
+  }
+
+  if (user?.must_change_password) {
     return null;
   }
 

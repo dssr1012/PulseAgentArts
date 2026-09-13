@@ -65,4 +65,25 @@ export class UserResponseDto {
   authProvider: string;
   circleId: string | null;
   role: string | null;
+  mustChangePassword: boolean;
+}
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'OldPassword123' })
+  @IsString()
+  currentPassword: string;
+
+  @ApiProperty({ example: 'NewPassword123' })
+  @IsString()
+  @MinLength(8)
+  @Matches(/(?=.*[A-Z])(?=.*\d)/, {
+    message: 'Password must contain at least 1 uppercase letter and 1 number',
+  })
+  newPassword: string;
 }
