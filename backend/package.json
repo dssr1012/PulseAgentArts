@@ -52,6 +52,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/passport-google-oauth20": "^2.0.14",
     "@types/passport-jwt": "^4.0.0",
+    "@types/supertest": "^7.2.1",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
@@ -61,6 +62,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.2.4",
     "prisma": "^5.22.0",
+    "supertest": "^7.2.2",
     "ts-jest": "^29.1.1",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
@@ -68,11 +70,22 @@
     "typescript": "^5.8.0"
   },
   "jest": {
-    "moduleFileExtensions": ["js", "json", "ts"],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "tsconfig.spec.json", "diagnostics": false, "isolatedModules": true }]
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.spec.json",
+          "diagnostics": false,
+          "isolatedModules": true
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.service.ts",
@@ -90,7 +103,11 @@
       "/common/redis.service.ts"
     ],
     "coverageDirectory": "../coverage",
-    "coverageReporters": ["text", "text-summary", "lcov"],
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "lcov"
+    ],
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"
