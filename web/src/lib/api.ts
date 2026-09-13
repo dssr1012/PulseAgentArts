@@ -41,9 +41,17 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor: handle 401 with token refresh
+    // Response interceptor: unwrap backend envelope + handle 401 with token refresh
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Backend wraps all responses in { success, data, timestamp } — unwrap
+        // so callers get the inner data directly via response.data.
+        const body = response.data;
+        if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+          response.data = body.data;
+        }
+        return response;
+      },
       async (error: AxiosError<ApiError>) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -99,8 +107,11 @@ class ApiClient {
           {},
           { withCredentials: true },
         );
-        this.setAccessToken(response.data.accessToken);
-        return response.data.accessToken;
+        // Raw axios bypasses the interceptor — unwrap envelope manually
+        const body = response.data as unknown as { success?: boolean; data?: { accessToken: string }; accessToken?: string };
+        const accessToken = body.data?.accessToken ?? body.accessToken ?? '';
+        this.setAccessToken(accessToken);
+        return accessToken;
       } finally {
         this.refreshPromise = null;
       }
