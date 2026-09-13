@@ -215,13 +215,13 @@ export class AuthService {
     });
   }
 
-  async forgotPassword(dto: ForgotPasswordDto): Promise<{ tempPassword?: string }> {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
     if (!user || user.authProvider === 'google_sso') {
-      return {};
+      return;
     }
 
     const tempPassword = crypto.randomBytes(6).toString('base64url').slice(0, 12) + 'A1';
@@ -261,8 +261,7 @@ export class AuthService {
       }
     }
 
-    this.logger.log(`Password reset for ${user.email}: ${tempPassword}`);
-    return { tempPassword };
+    this.logger.log(`Password reset issued for ${user.email}. Temp password: ${tempPassword}`);
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {

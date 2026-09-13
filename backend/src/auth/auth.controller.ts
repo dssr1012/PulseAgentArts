@@ -147,8 +147,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request a password reset' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    const result = await this.authService.forgotPassword(dto);
-    return { message: 'If the email exists, a temporary password has been sent.', ...result };
+    await this.authService.forgotPassword(dto);
+    return { message: 'If the email exists, a temporary password has been sent.' };
   }
 
   @Post('change-password')
