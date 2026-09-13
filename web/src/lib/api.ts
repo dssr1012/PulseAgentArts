@@ -210,7 +210,14 @@ class ApiClient {
 
   async getCircle(circleId: string) {
     const response = await this.client.get(`/circles/${circleId}`);
-    return response.data;
+    // Backend returns flat { id, name, members, ... } but frontend expects
+    // { circle: { id, name, ... }, members: [...] }
+    const data = response.data as Record<string, unknown>;
+    if (data && !data.circle && data.id) {
+      const { members, ...circle } = data;
+      return { circle, members: members || [] } as any;
+    }
+    return data;
   }
 
   async createCircle(data: { name: string; base_currency: string }) {
@@ -250,9 +257,29 @@ class ApiClient {
 
   // ============ Transaction API ============
 
+  private flattenTransaction(item: Record<string, unknown>): Record<string, unknown> {
+    const flat = { ...item };
+    if (item.user && typeof item.user === 'object') {
+      const u = item.user as Record<string, unknown>;
+      if (u.id && !flat.user_id) flat.user_id = u.id;
+      if (u.given_name && !flat.user_name) flat.user_name = u.given_name;
+    }
+    if (item.category && typeof item.category === 'object') {
+      const c = item.category as Record<string, unknown>;
+      if (c.id && !flat.category_id) flat.category_id = c.id;
+      if (c.name && !flat.category_name) flat.category_name = c.name;
+      if (c.group_id && !flat.group_id) flat.group_id = c.group_id;
+    }
+    return flat;
+  }
+
   async getExpenses(params?: Record<string, unknown>) {
     const response = await this.client.get('/expenses', { params });
-    return response.data;
+    const data = response.data as { data?: unknown[]; total?: number; total_pages?: number; page?: number; limit?: number };
+    if (data && Array.isArray(data.data)) {
+      data.data = data.data.map((item) => this.flattenTransaction(item as Record<string, unknown>));
+    }
+    return data as any;
   }
 
   async createExpense(data: Record<string, unknown>) {
@@ -332,7 +359,15 @@ class ApiClient {
 
   async getIrregularExpenses(params?: Record<string, unknown>) {
     const response = await this.client.get('/expenses/irregular', { params });
-    return response.data;
+    const data = response.data as { data?: unknown[]; total?: number; total_pages?: number };
+    if (data && Array.isArray(data.data)) {
+      data.data = data.data.map((item) => {
+        const flat = this.flattenTransaction(item as Record<string, unknown>);
+        if (!flat.available_actions) flat.available_actions = [];
+        return flat;
+      });
+    }
+    return data as any;
   }
 
   async associateExpense(expenseId: string, statementItemId: string) {

@@ -59,7 +59,7 @@ export default function TransactionsPage() {
   }, [searchParams]);
 
   const fetchData = useCallback(async () => {
-    if (!user?.circle_id) return;
+    if (!user?.circle_id) { setIsLoading(false); return; }
     setIsLoading(true);
     try {
       const [expensesData, categoriesData] = await Promise.all([

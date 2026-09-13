@@ -174,7 +174,7 @@ export default function AnomaliesPage() {
 
                   {/* Quick Actions */}
                   <div className="flex items-center gap-2 mt-3">
-                    {alert.available_actions.includes('associate') && (
+                    {(alert.available_actions || []).includes('associate') && (
                       <button
                         onClick={() => handleAssociate(alert.expense_id)}
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-pulse-blue-50 text-pulse-blue-600 hover:bg-pulse-blue-100 transition-colors"
@@ -183,7 +183,7 @@ export default function AnomaliesPage() {
                         Associate
                       </button>
                     )}
-                    {alert.available_actions.includes('edit') && (
+                    {(alert.available_actions || []).includes('edit') && (
                       <button
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                       >
@@ -191,7 +191,7 @@ export default function AnomaliesPage() {
                         Edit
                       </button>
                     )}
-                    {alert.available_actions.includes('discard') && (
+                    {(alert.available_actions || []).includes('discard') && (
                       <button
                         onClick={() => handleDiscard(alert.expense_id)}
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-pulse-red-50 text-pulse-red-600 hover:bg-pulse-red-100 transition-colors"
