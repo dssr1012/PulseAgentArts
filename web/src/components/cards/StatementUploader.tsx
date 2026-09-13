@@ -58,6 +58,8 @@ export function StatementUploader({ cardId, onParsed, onCancel }: StatementUploa
         addToast('error', 'Unsupported file format.');
       } else if (error.code === 'STMT_FILE_TOO_LARGE') {
         addToast('error', 'File exceeds 10 MB limit.');
+      } else if (error.code === 'STMT_PASSWORD_PROTECTED') {
+        addToast('error', 'The PDF is password-protected. Please remove the password and try again.');
       } else if (error.code === 'STMT_PARSE_FAILED') {
         addToast('error', 'Failed to parse statement. Please check the file format.');
       } else {

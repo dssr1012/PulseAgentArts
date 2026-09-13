@@ -16,4 +16,5 @@ export interface ParsedStatementItem {
 
 export interface IStatementParser {
   parse(fileBuffer: Buffer): Promise<ParsedStatement>;
+  parseText(text: string): ParsedStatement;
 }

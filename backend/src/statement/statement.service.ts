@@ -60,7 +60,13 @@ export class StatementService {
 
     try {
       // Parse the statement
-      const parsed = await this.pdfParser.parse(file.buffer);
+      let parsed;
+      if (file.mimetype === 'text/plain') {
+        const text = file.buffer.toString('utf-8');
+        parsed = this.pdfParser.parseText(text);
+      } else {
+        parsed = await this.pdfParser.parse(file.buffer);
+      }
 
       // Store file temporarily
       const tempDir = this.config.get<string>('STATEMENT_TEMP_DIR', './uploads/statements');
@@ -115,6 +121,12 @@ export class StatementService {
       };
     } catch (error) {
       this.logger.error(`Statement parsing failed: ${error.message}`);
+      if (error.message && error.message.includes('password-protected')) {
+        throw new BadRequestException({
+          errorCode: 'STMT_PASSWORD_PROTECTED',
+          message: 'The PDF is password-protected. Please remove the password and try again.',
+        });
+      }
       throw new BadRequestException({
         errorCode: 'STMT_PARSE_FAILED',
         message: 'Failed to parse the statement file',
