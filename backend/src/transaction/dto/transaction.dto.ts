@@ -52,9 +52,9 @@ export class CreateExpenseDto {
   @IsDateString()
   hiddenUntil?: string;
 
-  @ApiPropertyOptional({ enum: ['manual', 'notification_capture', 'mcp'], default: 'manual' })
+  @ApiPropertyOptional({ enum: ['manual', 'notification_capture', 'mcp', 'whatsapp'], default: 'manual' })
   @IsOptional()
-  @IsIn(['manual', 'notification_capture', 'mcp'])
+  @IsIn(['manual', 'notification_capture', 'mcp', 'whatsapp'])
   source?: string;
 
   @ApiPropertyOptional({ enum: ['confirmed', 'pending_confirmation'], default: 'confirmed' })

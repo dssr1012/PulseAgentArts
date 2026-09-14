@@ -49,6 +49,7 @@ enum TransactionSource {
   statement
   notification_capture
   mcp
+  whatsapp
 }
 
 enum ConfirmationStatus {
@@ -96,6 +97,8 @@ model User {
   failedLoginAttempts  Int       @default(0) @map("failed_login_attempts")
   lockedUntil          DateTime? @map("locked_until")
   mustChangePassword   Boolean   @default(false) @map("must_change_password")
+  whatsappPhone        String?   @map("whatsapp_phone")
+  whatsappDefaultCategoryId String? @map("whatsapp_default_category_id")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

@@ -399,6 +399,28 @@ class ApiClient {
     return response.data;
   }
 
+  // ============ WhatsApp API ============
+
+  async getWhatsappStatus() {
+    const response = await this.client.get('/whatsapp/status');
+    return response.data;
+  }
+
+  async connectWhatsapp() {
+    const response = await this.client.post('/whatsapp/connect');
+    return response.data;
+  }
+
+  async disconnectWhatsapp() {
+    const response = await this.client.delete('/whatsapp/disconnect');
+    return response.data;
+  }
+
+  async setWhatsappDefaultCategory(categoryId: string) {
+    const response = await this.client.post('/whatsapp/default-category', { categoryId });
+    return response.data;
+  }
+
   // ============ Anomaly API ============
 
   async getIrregularExpenses(params?: Record<string, unknown>) {

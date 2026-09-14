@@ -13,6 +13,7 @@ import { ExchangeModule } from './exchange/exchange.module';
 import { NotificationModule } from './notification/notification.module';
 import { RegexDictModule } from './regex-dict/regex-dict.module';
 import { AuditModule } from './audit/audit.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { CommonModule } from './common/common.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { CommonModule } from './common/common.module';
     NotificationModule,
     RegexDictModule,
     AuditModule,
+    WhatsappModule,
   ],
 })
 export class AppModule {}
