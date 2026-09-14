@@ -177,6 +177,7 @@ export class AnomalyService {
     ]);
 
     const data = alerts.map((alert) => ({
+      id: alert.id,
       expenseId: alert.transactionId,
       expense: alert.transaction
         ? {
@@ -186,14 +187,17 @@ export class AnomalyService {
             description: alert.transaction.description,
             merchantName: alert.transaction.merchantName,
             transactionDate: alert.transaction.transactionDate,
-            category: alert.transaction.category,
-            user: alert.transaction.user,
+            categoryId: alert.transaction.categoryId,
+            categoryName: alert.transaction.category?.name ?? 'Uncategorized',
+            userId: alert.transaction.userId,
+            userName: alert.transaction.user?.givenName ?? 'Unknown',
           }
         : null,
       severity: alert.severity,
       reason: alert.alertType,
       matchedStatementItemId: alert.statementItemId,
       availableActions: ['associate', 'edit', 'discard'],
+      createdAt: alert.createdAt,
     }));
 
     return {
