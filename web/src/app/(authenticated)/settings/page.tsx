@@ -29,13 +29,13 @@ export default function SettingsPage() {
   const [waQrCode, setWaQrCode] = useState<string | null>(null);
   const [waPhone, setWaPhone] = useState<string | null>(null);
   const [waLoading, setWaLoading] = useState(false);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchWaStatus = useCallback(async () => {
     try {
       const data = await apiClient.getWhatsappStatus();
       setWaStatus(data.status);
-      setWaQrCode(data.qrCode);
+      setWaQrCode(data.qr_code);
       setWaPhone(data.phone);
     } catch {
       /* ignore */
@@ -54,10 +54,8 @@ export default function SettingsPage() {
     try {
       const data = await apiClient.connectWhatsapp();
       setWaStatus(data.status);
-      setWaQrCode(data.qrCode);
-      if (data.status === 'connecting' && !data.qrCode) {
-        pollRef.current = setInterval(fetchWaStatus, 2000);
-      } else if (data.qrCode) {
+      setWaQrCode(data.qr_code);
+      if (data.status === 'connecting') {
         pollRef.current = setInterval(fetchWaStatus, 2000);
       }
     } catch {
