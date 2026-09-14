@@ -190,10 +190,10 @@ export default function SettingsPage() {
                 Send messages to yourself in WhatsApp to load expenses. Examples:
               </p>
               <ul className="text-xs text-green-700 space-y-1">
-                <li><code>gaste 1500 en super</code></li>
-                <li><code>2500 nafta</code></li>
-                <li><code>pagué 800 farmacia</code></li>
-                <li><code>spent 100 on coffee</code></li>
+                <li key="ex1"><code>gaste 1500 en super</code></li>
+                <li key="ex2"><code>2500 nafta</code></li>
+                <li key="ex3"><code>pagué 800 farmacia</code></li>
+                <li key="ex4"><code>spent 100 on coffee</code></li>
               </ul>
             </div>
           )}
