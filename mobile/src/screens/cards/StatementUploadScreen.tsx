@@ -11,6 +11,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  TextInput,
+  Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -28,6 +30,12 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
   const { cardId } = route.params;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [pendingFile, setPendingFile] = useState<{
+    uri: string;
+    type: 'application/pdf' | 'text/plain';
+  } | null>(null);
 
   const handleCameraCapture = async () => {
     try {
@@ -70,7 +78,8 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
 
   const uploadFile = async (
     fileUri: string,
-    fileType: 'application/pdf' | 'text/plain'
+    fileType: 'application/pdf' | 'text/plain',
+    password?: string
   ) => {
     setIsUploading(true);
     setUploadProgress(0);
@@ -80,7 +89,8 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
         cardId,
         fileUri,
         fileType,
-        (progress) => setUploadProgress(progress)
+        (progress) => setUploadProgress(progress),
+        password
       );
 
       // Navigate to preview screen
@@ -98,6 +108,13 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
           case 'STMT_FILE_TOO_LARGE':
             Alert.alert('Error', 'El archivo es demasiado grande (máximo 10 MB).');
             break;
+          case 'STMT_PASSWORD_REQUIRED':
+            setPendingFile({ uri: fileUri, type: fileType });
+            setNeedsPassword(true);
+            break;
+          case 'STMT_ALREADY_UPLOADED':
+            Alert.alert('Ya cargado', 'Este resumen ya fue cargado para esta tarjeta.');
+            break;
           case 'STMT_PARSE_FAILED':
             Alert.alert('Error', 'No se pudo analizar el resumen. Verifique que sea un resumen válido.');
             break;
@@ -111,6 +128,16 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
       setIsUploading(false);
       setUploadProgress(0);
     }
+  };
+
+  const handlePasswordSubmit = () => {
+    if (!passwordInput.trim() || !pendingFile) return;
+    const file = pendingFile;
+    const pw = passwordInput.trim();
+    setNeedsPassword(false);
+    setPasswordInput('');
+    setPendingFile(null);
+    uploadFile(file.uri, file.type, pw);
   };
 
   return (
@@ -171,6 +198,50 @@ export function StatementUploadScreen({ route, navigation }: StatementUploadScre
           Por seguridad, no almacenamos números de tarjeta completos ni códigos de seguridad.
         </Text>
       </View>
+
+      {/* Password Modal */}
+      <Modal
+        visible={needsPassword}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNeedsPassword(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>PDF protegido</Text>
+            <Text style={styles.modalSubtitle}>
+              Ingrese la contraseña del resumen. Se guardará para esta tarjeta.
+            </Text>
+            <TextInput
+              style={styles.passwordInput}
+              value={passwordInput}
+              onChangeText={setPasswordInput}
+              placeholder="Contraseña del PDF"
+              secureTextEntry
+              autoFocus
+              onSubmitEditing={handlePasswordSubmit}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => {
+                  setNeedsPassword(false);
+                  setPasswordInput('');
+                  setPendingFile(null);
+                }}
+              >
+                <Text style={styles.modalButtonTextSecondary}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handlePasswordSubmit}
+              >
+                <Text style={styles.modalButtonTextPrimary}>Desbloquear</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -219,4 +290,34 @@ const styles = StyleSheet.create({
   },
   noticeIcon: { fontSize: 16 },
   noticeText: { flex: 1, fontSize: 12, color: Colors.alert, lineHeight: 16 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 360,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
+  modalSubtitle: { fontSize: 14, color: Colors.textSecondary, marginBottom: 16, lineHeight: 20 },
+  passwordInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: Colors.textPrimary,
+    marginBottom: 16,
+  },
+  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  modalButtonSecondary: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  modalButtonPrimary: { backgroundColor: Colors.primary },
+  modalButtonTextSecondary: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  modalButtonTextPrimary: { fontSize: 14, fontWeight: '600', color: '#fff' },
 });

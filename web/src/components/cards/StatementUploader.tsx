@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
 import type { StatementPreview } from '@/types';
-import { Upload, FileText, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, AlertCircle, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatementUploaderProps {
@@ -20,8 +20,10 @@ export function StatementUploader({ cardId, onParsed, onCancel }: StatementUploa
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback(async (file: File, password?: string) => {
     // Validate file type
     const validTypes = ['application/pdf', 'text/plain'];
     if (!validTypes.includes(file.type) && !file.name.endsWith('.pdf') && !file.name.endsWith('.txt')) {
@@ -45,7 +47,7 @@ export function StatementUploader({ cardId, onParsed, onCancel }: StatementUploa
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
 
-      const preview = await apiClient.uploadStatement(cardId, file);
+      const preview = await apiClient.uploadStatement(cardId, file, password);
       clearInterval(progressInterval);
       setUploadProgress(100);
 
@@ -58,8 +60,10 @@ export function StatementUploader({ cardId, onParsed, onCancel }: StatementUploa
         addToast('error', 'Unsupported file format.');
       } else if (error.code === 'STMT_FILE_TOO_LARGE') {
         addToast('error', 'File exceeds 10 MB limit.');
-      } else if (error.code === 'STMT_PASSWORD_PROTECTED') {
-        addToast('error', 'The PDF is password-protected. Please remove the password and try again.');
+      } else if (error.code === 'STMT_PASSWORD_REQUIRED') {
+        setNeedsPassword(true);
+      } else if (error.code === 'STMT_ALREADY_UPLOADED') {
+        addToast('warning', 'This statement has already been uploaded for this card.');
       } else if (error.code === 'STMT_PARSE_FAILED') {
         addToast('error', 'Failed to parse statement. Please check the file format.');
       } else {
@@ -67,9 +71,25 @@ export function StatementUploader({ cardId, onParsed, onCancel }: StatementUploa
       }
       setIsUploading(false);
       setUploadProgress(0);
-      setSelectedFile(null);
     }
   }, [cardId, onParsed, addToast]);
+
+  const handlePasswordSubmit = useCallback(() => {
+    if (!passwordInput.trim()) {
+      addToast('error', 'Please enter the PDF password.');
+      return;
+    }
+    if (!selectedFile) return;
+    setNeedsPassword(false);
+    setPasswordInput('');
+    handleFile(selectedFile, passwordInput.trim());
+  }, [passwordInput, selectedFile, handleFile, addToast]);
+
+  const handlePasswordCancel = useCallback(() => {
+    setNeedsPassword(false);
+    setPasswordInput('');
+    setSelectedFile(null);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -154,6 +174,44 @@ export function StatementUploader({ cardId, onParsed, onCancel }: StatementUploa
           Supported formats: PDF and plain text files. The statement will be parsed automatically to extract charges, dates, and amounts.
         </p>
       </div>
+
+      {/* Password prompt */}
+      {needsPassword && (
+        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 space-y-3">
+          <div className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-amber-600" />
+            <p className="text-sm font-medium text-amber-900">
+              This PDF is password-protected
+            </p>
+          </div>
+          <p className="text-xs text-amber-700">
+            Enter the statement password. It will be saved for this card so you won&apos;t need to enter it again.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              placeholder="PDF password"
+              className="flex-1 px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              autoFocus
+            />
+            <button
+              onClick={handlePasswordSubmit}
+              className="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700"
+            >
+              Unlock
+            </button>
+            <button
+              onClick={handlePasswordCancel}
+              className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-sm font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <button onClick={onCancel} className="btn-secondary" disabled={isUploading}>

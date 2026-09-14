@@ -302,6 +302,8 @@ export type ErrorCode =
   | 'STMT_PARSE_FAILED'
   | 'STMT_PREVIEW_NOT_FOUND'
   | 'STMT_ALREADY_CONFIRMED'
+  | 'STMT_PASSWORD_REQUIRED'
+  | 'STMT_ALREADY_UPLOADED'
   | 'PRIVACY_INVALID_DATE';
 
 export interface ApiError {

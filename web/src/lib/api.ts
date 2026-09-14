@@ -377,9 +377,12 @@ class ApiClient {
 
   // ============ Statement API ============
 
-  async uploadStatement(cardId: string, file: File) {
+  async uploadStatement(cardId: string, file: File, password?: string) {
     const formData = new FormData();
     formData.append('file', file);
+    if (password) {
+      formData.append('password', password);
+    }
     const response = await this.client.post(`/cards/${cardId}/statements`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -388,6 +391,11 @@ class ApiClient {
 
   async confirmStatement(previewId: string, data?: { items?: unknown[] }) {
     const response = await this.client.post(`/statements/${previewId}/confirm`, data);
+    return response.data;
+  }
+
+  async listStatements(cardId: string) {
+    const response = await this.client.get(`/cards/${cardId}/statements`);
     return response.data;
   }
 

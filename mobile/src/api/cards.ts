@@ -41,7 +41,8 @@ export async function uploadStatement(
   cardId: string,
   fileUri: string,
   fileType: 'application/pdf' | 'text/plain',
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  password?: string
 ): Promise<StatementPreview> {
   const formData = new FormData();
   const fileName = fileUri.split('/').pop() || 'statement';
@@ -51,6 +52,10 @@ export async function uploadStatement(
     type: fileType,
     name: fileName,
   } as any);
+
+  if (password) {
+    formData.append('password', password);
+  }
 
   const response = await apiClient.post<StatementPreview>(
     `/cards/${cardId}/statements`,

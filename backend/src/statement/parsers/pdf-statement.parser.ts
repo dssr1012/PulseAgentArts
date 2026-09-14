@@ -8,9 +8,9 @@ import {
 export class PdfStatementParser implements IStatementParser {
   private readonly logger = new Logger(PdfStatementParser.name);
 
-  async parse(fileBuffer: Buffer): Promise<ParsedStatement> {
+  async parse(fileBuffer: Buffer, passwords: string[] = []): Promise<ParsedStatement> {
     try {
-      let text: string;
+      let text = '';
 
       try {
         const pdfParse = require('pdf-parse');
@@ -18,8 +18,21 @@ export class PdfStatementParser implements IStatementParser {
         text = pdfData.text;
       } catch (err) {
         if (err.message && (err.message.includes('password') || err.message.includes('Password'))) {
-          this.logger.warn('PDF appears encrypted, retrying with empty password');
-          text = await this.extractTextWithPassword(fileBuffer, '');
+          this.logger.warn(`PDF appears encrypted, trying ${passwords.length} password(s) + empty fallback`);
+          const candidates = [...passwords, ''];
+          let extracted = false;
+          for (const pw of candidates) {
+            try {
+              text = await this.extractTextWithPassword(fileBuffer, pw);
+              extracted = true;
+              break;
+            } catch {
+              // try next password
+            }
+          }
+          if (!extracted) {
+            throw new Error('PDF is password-protected');
+          }
         } else {
           throw err;
         }
@@ -30,7 +43,7 @@ export class PdfStatementParser implements IStatementParser {
     } catch (error) {
       this.logger.error(`PDF parsing failed: ${error.message}`);
       if (error.message && error.message.includes('password-protected')) {
-        throw new Error('PDF is password-protected. Please remove the password and try again.');
+        throw new Error('PDF is password-protected');
       }
       throw new Error(`Failed to parse PDF statement: ${error.message}`);
     }
@@ -71,17 +84,11 @@ export class PdfStatementParser implements IStatementParser {
   private extractDataFromText(text: string): ParsedStatement {
     const lines = text.split('\n').filter((l) => l.trim());
 
-    const dates = this.extractDates(text);
-    const amounts = this.extractAmounts(text);
+    const closingDate = this.extractClosingDate(text);
+    const dueDate = this.extractDueDate(text);
+    const totalAmount = this.extractTotalAmount(text);
+    const minPayment = this.extractMinPayment(text);
     const items = this.extractLineItems(lines);
-
-    const closingDate = dates.length > 0 ? dates[0] : new Date();
-    const dueDate = dates.length > 1 ? dates[1] : new Date();
-
-    const totalAmount = amounts.length > 0 ? Math.max(...amounts) : 0;
-    const minPayment = amounts.length > 1
-      ? amounts.sort((a, b) => a - b).find((a) => a > 0 && a < totalAmount) || 0
-      : 0;
 
     return {
       closingDate,
@@ -93,38 +100,53 @@ export class PdfStatementParser implements IStatementParser {
     };
   }
 
-  private extractDates(text: string): Date[] {
-    const patterns = [
-      /(\d{2})\/(\d{2})\/(\d{4})/g,
-      /(\d{2})-(\d{2})-(\d{4})/g,
-      /(\d{2})\.(\d{2})\.(\d{4})/g,
-      /(\d{4})-(\d{2})-(\d{2})/g,
-    ];
-    const dates: Date[] = [];
-    for (const pattern of patterns) {
-      for (const m of text.matchAll(pattern)) {
-        let day: string, month: string, year: string;
-        if (m[1].length === 4) {
-          year = m[1]; month = m[2]; day = m[3];
-        } else {
-          day = m[1]; month = m[2]; year = m[3];
-        }
-        const d = new Date(`${year}-${month}-${day}`);
-        if (!isNaN(d.getTime())) dates.push(d);
-      }
-    }
-    return dates;
+  private readonly MONTHS: Record<string, number> = {
+    ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5,
+    jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11,
+  };
+
+  private parseSpanishDate(dayStr: string, monStr: string, yearStr: string): Date | null {
+    const day = parseInt(dayStr, 10);
+    const month = this.MONTHS[monStr.toLowerCase().slice(0, 3)];
+    const year = 2000 + parseInt(yearStr, 10);
+    if (isNaN(day) || month === undefined || isNaN(year)) return null;
+    return new Date(year, month, day);
   }
 
-  private extractAmounts(text: string): number[] {
-    const amountPattern = /\$\s*([\d.,]+)/g;
-    const amounts: number[] = [];
-    for (const m of text.matchAll(amountPattern)) {
-      const raw = m[1];
-      const parsed = this.parseAmount(raw);
-      if (parsed !== null && parsed > 0) amounts.push(parsed);
+  private extractClosingDate(text: string): Date {
+    const m = text.match(/CIERRE ACTUAL:\s*(\d{1,2})\s+(\w{3})\s+(\d{2})/);
+    if (m) {
+      const d = this.parseSpanishDate(m[1], m[2], m[3]);
+      if (d) return d;
     }
-    return amounts;
+    return new Date();
+  }
+
+  private extractDueDate(text: string): Date {
+    const m = text.match(/VENCIMIENTO[^]*?(\d{1,2})\s+(\w{3})\s+(\d{2})/);
+    if (m) {
+      const d = this.parseSpanishDate(m[1], m[2], m[3]);
+      if (d) return d;
+    }
+    return new Date();
+  }
+
+  private extractTotalAmount(text: string): number {
+    const m = text.match(/SALDO ACTUAL\s*\$\s*([\d.,]+)/);
+    if (m) {
+      const amt = this.parseAmount(m[1]);
+      if (amt !== null) return amt;
+    }
+    return 0;
+  }
+
+  private extractMinPayment(text: string): number {
+    const m = text.match(/PAGO MINIMO\s*\$\s*([\d.,]+)/);
+    if (m) {
+      const amt = this.parseAmount(m[1]);
+      if (amt !== null) return amt;
+    }
+    return 0;
   }
 
   private parseAmount(raw: string): number | null {
@@ -153,29 +175,54 @@ export class PdfStatementParser implements IStatementParser {
 
   private extractLineItems(lines: string[]): any[] {
     const items: any[] = [];
-    const itemPatterns = [
-      /(\d{2})\/(\d{2})\/(\d{4})\s+(.+?)\s+([\d.,]+)$/,
-      /(\d{2})-(\d{2})-(\d{4})\s+(.+?)\s+([\d.,]+)$/,
-      /(\d{2})\.(\d{2})\.(\d{4})\s+(.+?)\s+([\d.,]+)$/,
-    ];
+    const datePattern = /(\d{2})\.(\d{2})\.(\d{2})/;
+    const skipPatterns = /^(SALDO|PAGO|LIMITES|FECHA|COMPROBANTE|DETALLE|TNA|TEM|CFT|VTO|CIERRE|VENCIMIENTO|Costo|La tasa|Los intereses|Si |Le informamos|Recuerde|Orientaci|De conformidad|Abone|USTED|Por seguridad|Lectura)/i;
 
     for (const line of lines) {
-      for (const pattern of itemPatterns) {
-        const match = line.match(pattern);
-        if (match) {
-          const [, day, month, year, description, amountStr] = match;
-          const amount = this.parseAmount(amountStr);
-          if (amount !== null) {
-            items.push({
-              date: new Date(`${year}-${month}-${day}`),
-              description: description.trim(),
-              amount,
-              currency: 'ARS',
-            });
-            break;
+      const trimmed = line.trim();
+      if (skipPatterns.test(trimmed)) continue;
+
+      const dateMatch = trimmed.match(datePattern);
+      if (!dateMatch) continue;
+
+      const day = dateMatch[1];
+      const month = dateMatch[2];
+      const year = dateMatch[3];
+      const fullYear = 2000 + parseInt(year, 10);
+
+      const afterDate = trimmed.slice(dateMatch.index! + dateMatch[0].length);
+
+      const parts = afterDate.split(/\s{2,}/).filter((p) => p.trim());
+      if (parts.length < 2) continue;
+
+      const amountParts: number[] = [];
+      let firstAmountIdx = -1;
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i].trim();
+        if (/^[\d.,]+$/.test(p) && !p.endsWith('%')) {
+          const amt = this.parseAmount(p);
+          if (amt !== null) {
+            if (firstAmountIdx === -1) firstAmountIdx = i;
+            amountParts.push(amt);
           }
         }
       }
+
+      if (firstAmountIdx === -1 || amountParts.length === 0) continue;
+      const pesos = amountParts[0];
+      if (pesos === 0) continue;
+
+      const descParts = parts.slice(0, firstAmountIdx);
+      let description = descParts.join(' ').trim();
+      description = description.replace(/\s+\$$/, '').replace(/\$$/, '').trim();
+      if (!description) continue;
+
+      items.push({
+        date: new Date(fullYear, parseInt(month, 10) - 1, parseInt(day, 10)),
+        description,
+        amount: pesos,
+        currency: 'ARS',
+      });
     }
 
     return items;

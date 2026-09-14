@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Param,
   Body,
   UseGuards,
@@ -49,7 +50,17 @@ export class CardStatementController {
     @Param('cardId') cardId: string,
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser('circleId') circleId: string,
+    @Body('password') password: string | undefined,
   ) {
-    return this.statementService.uploadAndParse(cardId, circleId, file);
+    return this.statementService.uploadAndParse(cardId, circleId, file, password);
+  }
+
+  @Get(':cardId/statements')
+  @ApiOperation({ summary: 'List statements for a credit card' })
+  async listStatements(
+    @Param('cardId') cardId: string,
+    @CurrentUser('circleId') circleId: string,
+  ) {
+    return this.statementService.listStatements(cardId, circleId);
   }
 }

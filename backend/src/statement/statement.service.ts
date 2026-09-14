@@ -8,6 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
 import { PdfStatementParser } from './parsers/pdf-statement.parser';
+import { StatementPasswordCrypto } from '../common/statement-password.crypto';
+import { AnomalyService } from '../anomaly/anomaly.service';
 import { ConfirmStatementDto } from './dto/statement.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,12 +23,15 @@ export class StatementService {
     private prisma: PrismaService,
     private config: ConfigService,
     private pdfParser: PdfStatementParser,
+    private passwordCrypto: StatementPasswordCrypto,
+    private anomalyService: AnomalyService,
   ) {}
 
   async uploadAndParse(
     cardId: string,
     circleId: string,
     file: Express.Multer.File,
+    password?: string,
   ) {
     // Validate card exists in circle
     const card = await this.prisma.creditCard.findFirst({
@@ -65,7 +70,46 @@ export class StatementService {
         const text = file.buffer.toString('utf-8');
         parsed = this.pdfParser.parseText(text);
       } else {
-        parsed = await this.pdfParser.parse(file.buffer);
+        // Build password candidates: user-provided first, then stored card password
+        const passwordsToTry: string[] = [];
+        if (password) passwordsToTry.push(password);
+        if (card.statementPassword) {
+          const decrypted = this.passwordCrypto.decrypt(card.statementPassword);
+          if (decrypted && !passwordsToTry.includes(decrypted)) {
+            passwordsToTry.push(decrypted);
+          }
+        }
+        parsed = await this.pdfParser.parse(file.buffer, passwordsToTry);
+      }
+
+      // If a password was provided and worked, store it on the card for next time
+      if (password && file.mimetype === 'application/pdf') {
+        const encrypted = this.passwordCrypto.encrypt(password);
+        await this.prisma.creditCard.update({
+          where: { id: cardId },
+          data: { statementPassword: encrypted },
+        });
+      }
+
+      // Check for duplicate statement (same card + same closing date)
+      const closeDate = parsed.closingDate;
+      const dayStart = new Date(closeDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(closeDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const existing = await this.prisma.cardStatement.findFirst({
+        where: {
+          cardId,
+          closeDate: { gte: dayStart, lte: dayEnd },
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException({
+          errorCode: 'STMT_ALREADY_UPLOADED',
+          message: `A statement with closing date ${closeDate.toLocaleDateString()} has already been uploaded for this card.`,
+        });
       }
 
       // Store file temporarily
@@ -120,11 +164,14 @@ export class StatementService {
         })),
       };
     } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
       this.logger.error(`Statement parsing failed: ${error.message}`);
       if (error.message && error.message.includes('password-protected')) {
         throw new BadRequestException({
-          errorCode: 'STMT_PASSWORD_PROTECTED',
-          message: 'The PDF is password-protected. Please remove the password and try again.',
+          errorCode: 'STMT_PASSWORD_REQUIRED',
+          message: 'This PDF is password-protected. Please enter the statement password.',
         });
       }
       throw new BadRequestException({
@@ -211,6 +258,53 @@ export class StatementService {
       }
     }
 
+    // Trigger anomaly detection so unmatched charges appear immediately
+    try {
+      await this.anomalyService.detectAnomaliesForCircle(circleId);
+    } catch (err) {
+      this.logger.warn(`Anomaly detection failed after statement confirm: ${err.message}`);
+    }
+
     return { createdExpenseIds };
+  }
+
+  async listStatements(cardId: string, circleId: string) {
+    const card = await this.prisma.creditCard.findFirst({
+      where: { id: cardId, groupId: circleId },
+    });
+    if (!card) {
+      throw new NotFoundException({
+        errorCode: 'CARD_NOT_FOUND',
+        message: 'Credit card not found',
+      });
+    }
+
+    const statements = await this.prisma.cardStatement.findMany({
+      where: { cardId },
+      include: {
+        items: true,
+      },
+      orderBy: { closeDate: 'desc' },
+    });
+
+    return statements.map((s) => ({
+      id: s.id,
+      cardId: s.cardId,
+      closeDate: s.closeDate.toISOString(),
+      dueDate: s.dueDate.toISOString(),
+      totalAmount: Number(s.totalAmount),
+      minPayment: Number(s.minPayment),
+      currency: s.currency,
+      isConfirmed: s.isConfirmed,
+      createdAt: s.createdAt.toISOString(),
+      items: s.items.map((item) => ({
+        id: item.id,
+        date: item.date.toISOString(),
+        description: item.description,
+        amount: Number(item.amount),
+        currency: item.currency,
+        matchedTransactionId: item.matchedTransactionId,
+      })),
+    }));
   }
 }

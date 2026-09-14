@@ -16,6 +16,10 @@ import {
   Trash2,
   Loader2,
   Upload,
+  FileText,
+  Calendar,
+  DollarSign,
+  CheckCircle,
 } from 'lucide-react';
 
 export default function CardsPage() {
@@ -28,6 +32,9 @@ export default function CardsPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
   const [statementPreview, setStatementPreview] = useState<StatementPreview | null>(null);
+  const [showStatementsModal, setShowStatementsModal] = useState(false);
+  const [cardStatements, setCardStatements] = useState<any[]>([]);
+  const [isLoadingStatements, setIsLoadingStatements] = useState(false);
 
   // Add card form state
   const [bankName, setBankName] = useState('');
@@ -81,6 +88,20 @@ export default function CardsPage() {
     setStatementPreview(null);
   };
 
+  const handleViewStatements = async (card: CreditCard) => {
+    setSelectedCard(card);
+    setShowStatementsModal(true);
+    setIsLoadingStatements(true);
+    try {
+      const data = await apiClient.listStatements(card.id);
+      setCardStatements(data);
+    } catch {
+      addToast('error', 'Failed to load statements.');
+    } finally {
+      setIsLoadingStatements(false);
+    }
+  };
+
   const handleStatementParsed = (preview: StatementPreview) => {
     setStatementPreview(preview);
   };
@@ -93,6 +114,7 @@ export default function CardsPage() {
       setShowUploadModal(false);
       setStatementPreview(null);
       setSelectedCard(null);
+      fetchCards();
     } catch {
       addToast('error', 'Failed to confirm statement.');
     }
@@ -141,13 +163,20 @@ export default function CardsPage() {
               </div>
               <p className="text-sm font-semibold text-gray-900">{card.bank_name}</p>
               <p className="text-lg font-mono text-gray-600 mt-1">•••• •••• •••• {card.last_four_digits}</p>
-              <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                 <button
                   onClick={() => handleUploadClick(card)}
                   className="btn-primary w-full flex items-center justify-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   Upload Statement
+                </button>
+                <button
+                  onClick={() => handleViewStatements(card)}
+                  className="btn-secondary w-full flex items-center justify-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  View Statements
                 </button>
               </div>
             </div>
@@ -229,6 +258,92 @@ export default function CardsPage() {
             onConfirm={handleStatementConfirmed}
             onReject={() => { setStatementPreview(null); }}
           />
+        )}
+      </Modal>
+
+      {/* Statements List Modal */}
+      <Modal
+        isOpen={showStatementsModal}
+        onClose={() => { setShowStatementsModal(false); setCardStatements([]); }}
+        title={selectedCard ? `Statements — ${selectedCard.bank_name} •••• ${selectedCard.last_four_digits}` : 'Statements'}
+        size="xl"
+      >
+        {isLoadingStatements ? (
+          <LoadingOverlay />
+        ) : cardStatements.length === 0 ? (
+          <EmptyState
+            icon={<FileText className="h-12 w-12" />}
+            title="No statements yet"
+            description="Upload a statement to see charges and payment details here."
+          />
+        ) : (
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {cardStatements.map((stmt: any) => (
+              <div key={stmt.id} className="border border-gray-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        Close: {new Date(stmt.close_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        Due: {new Date(stmt.due_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  {stmt.is_confirmed ? (
+                    <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                      <CheckCircle className="h-3 w-3" /> Confirmed
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                      Pending
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-red-50 rounded-lg p-3">
+                    <p className="text-xs text-red-600">Total Amount</p>
+                    <p className="text-lg font-bold text-red-700">
+                      ${Number(stmt.total_amount).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-3">
+                    <p className="text-xs text-yellow-600">Minimum Payment</p>
+                    <p className="text-lg font-bold text-yellow-700">
+                      ${Number(stmt.min_payment).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                {stmt.items && stmt.items.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-2">
+                      Charges ({stmt.items.length})
+                    </p>
+                    <div className="space-y-1">
+                      {stmt.items.map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-400 text-xs">
+                              {new Date(item.date).toLocaleDateString()}
+                            </span>
+                            <span className="text-gray-700">{item.description}</span>
+                          </div>
+                          <span className="font-medium text-gray-900">
+                            ${Number(item.amount).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </Modal>
     </div>

@@ -232,12 +232,13 @@ model Category {
 // ============================================================
 
 model CreditCard {
-  id             String   @id @default(uuid())
-  groupId        String   @map("group_id")
-  bankName       String   @map("bank_name")
-  cardType       CardType @map("card_type")
-  lastFourDigits String   @map("last_four_digits") @db.Char(4)
-  createdAt      DateTime @default(now()) @map("created_at")
+  id                String   @id @default(uuid())
+  groupId           String   @map("group_id")
+  bankName          String   @map("bank_name")
+  cardType          CardType @map("card_type")
+  lastFourDigits    String   @map("last_four_digits") @db.Char(4)
+  statementPassword String?  @map("statement_password")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   group          FamilyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   statements     CardStatement[]
