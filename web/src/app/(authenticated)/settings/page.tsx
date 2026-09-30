@@ -16,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  Users,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,6 +30,8 @@ export default function SettingsPage() {
   const [waQrCode, setWaQrCode] = useState<string | null>(null);
   const [waPhone, setWaPhone] = useState<string | null>(null);
   const [waLoading, setWaLoading] = useState(false);
+  const [waGroups, setWaGroups] = useState<{ id: string; name: string; isExpenseGroup: boolean }[]>([]);
+  const [waGroupsLoading, setWaGroupsLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchWaStatus = useCallback(async () => {
@@ -90,6 +93,41 @@ export default function SettingsPage() {
       pollRef.current = setInterval(fetchWaStatus, 2000);
     }
   }, [waStatus, fetchWaStatus]);
+
+  const fetchWaGroups = useCallback(async () => {
+    setWaGroupsLoading(true);
+    try {
+      const groups = await apiClient.listWhatsappGroups();
+      setWaGroups(groups);
+    } catch {
+      /* ignore */
+    } finally {
+      setWaGroupsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (waStatus === 'connected') {
+      fetchWaGroups();
+    } else {
+      setWaGroups([]);
+    }
+  }, [waStatus, fetchWaGroups]);
+
+  const toggleExpenseGroup = async (groupId: string, groupName: string, currentlyEnabled: boolean) => {
+    const prev = waGroups;
+    setWaGroups((gs) => gs.map((g) => (g.id === groupId ? { ...g, isExpenseGroup: !currentlyEnabled } : g)));
+    try {
+      if (currentlyEnabled) {
+        await apiClient.removeWhatsappExpenseGroup(groupId);
+      } else {
+        await apiClient.addWhatsappExpenseGroup(groupId, groupName);
+      }
+    } catch {
+      setWaGroups(prev);
+      addToast('error', 'Failed to update expense group.');
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -185,16 +223,66 @@ export default function SettingsPage() {
           )}
 
           {waStatus === 'connected' && (
-            <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-              <p className="text-sm text-green-800 mb-2">
-                Send messages to yourself in WhatsApp to load expenses. Examples:
+            <div className="space-y-3">
+              <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                <p className="text-sm text-green-800 mb-1 font-medium">
+                  Select a WhatsApp group as your expense source
+                </p>
+                <p className="text-xs text-green-700">
+                  Only messages in selected groups will be loaded as expenses. Create a group called “gastos” in WhatsApp, then pick it here.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+                  <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Users className="h-4 w-4" /> Your WhatsApp Groups
+                  </span>
+                  <button
+                    onClick={fetchWaGroups}
+                    disabled={waGroupsLoading}
+                    className="text-xs text-pulse-blue-600 hover:text-pulse-blue-700 flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {waGroupsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    Refresh
+                  </button>
+                </div>
+
+                {waGroups.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-gray-500">
+                    {waGroupsLoading ? 'Loading groups...' : 'No groups found. Create a group in WhatsApp first.'}
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                    {waGroups.map((g) => (
+                      <li key={g.id} className="flex items-center justify-between px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                            <Users className="h-4 w-4 text-green-600" />
+                          </div>
+                          <span className="text-sm text-gray-900 truncate">{g.name}</span>
+                        </div>
+                        <button
+                          onClick={() => toggleExpenseGroup(g.id, g.name, g.isExpenseGroup)}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${
+                            g.isExpenseGroup ? 'bg-green-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                              g.isExpenseGroup ? 'translate-x-4' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-500 px-1">
+                Message format: <code>gaste 1500 en super</code>, <code>2500 nafta</code>, <code>pagué 800 farmacia</code>
               </p>
-              <ul className="text-xs text-green-700 space-y-1">
-                <li key="ex1"><code>gaste 1500 en super</code></li>
-                <li key="ex2"><code>2500 nafta</code></li>
-                <li key="ex3"><code>pagué 800 farmacia</code></li>
-                <li key="ex4"><code>spent 100 on coffee</code></li>
-              </ul>
             </div>
           )}
 

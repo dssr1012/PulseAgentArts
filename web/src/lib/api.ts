@@ -421,6 +421,26 @@ class ApiClient {
     return response.data;
   }
 
+  async listWhatsappGroups() {
+    const response = await this.client.get('/whatsapp/groups');
+    return response.data as { id: string; name: string; isExpenseGroup: boolean }[];
+  }
+
+  async getWhatsappExpenseGroups() {
+    const response = await this.client.get('/whatsapp/expense-groups');
+    return response.data as { id: string; groupJid: string; groupName: string | null }[];
+  }
+
+  async addWhatsappExpenseGroup(groupJid: string, groupName?: string) {
+    const response = await this.client.post('/whatsapp/expense-groups', { groupJid, groupName });
+    return response.data;
+  }
+
+  async removeWhatsappExpenseGroup(groupJid: string) {
+    const response = await this.client.delete(`/whatsapp/expense-groups/${encodeURIComponent(groupJid)}`);
+    return response.data;
+  }
+
   // ============ Anomaly API ============
 
   async getIrregularExpenses(params?: Record<string, unknown>) {

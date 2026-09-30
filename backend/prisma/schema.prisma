@@ -105,8 +105,22 @@ model User {
   circleMembership     FamilyGroupMember?
   transactions         Transaction[]
   refreshTokens        RefreshToken[]
+  whatsappGroups       WhatsappGroup[]
 
   @@map("users")
+}
+
+model WhatsappGroup {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  groupJid  String   @map("group_jid")
+  groupName String?  @map("group_name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupJid])
+  @@map("whatsapp_groups")
 }
 
 model RefreshToken {

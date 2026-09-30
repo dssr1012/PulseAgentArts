@@ -179,37 +179,45 @@ export class WhatsappService implements OnModuleDestroy {
     if (!messages || messages.length === 0) return;
     if (m.type !== 'notify') return;
 
+    const expenseGroups = await this.prisma.whatsappGroup.findMany({
+      where: { userId },
+      select: { groupJid: true, groupName: true },
+    });
+    if (expenseGroups.length === 0) return;
+
+    const allowedJids = new Set(expenseGroups.map((g) => g.groupJid));
+
     for (const msg of messages) {
       if (!msg.message) continue;
-      if (msg.key.fromMe !== true) continue;
+
+      const remoteJid = msg.key?.remoteJid || '';
+      if (!allowedJids.has(remoteJid)) continue;
 
       const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
       if (!text.trim()) continue;
 
       const parsed = this.messageParser.parse(text);
-      if (!parsed) {
-        await this.sendReply(userId, msg.key.remoteJid, 'No pude entender el mensaje. Ejemplo: "gaste 1500 en super" o "1500 super"');
-        continue;
-      }
+      if (!parsed) continue;
 
       try {
         const user = await this.prisma.user.findUnique({
           where: { id: userId },
           include: { circleMembership: true },
         });
-        if (!user?.circleMembership) {
-          await this.sendReply(userId, msg.key.remoteJid, 'No perteneces a un grupo. Crea o únete a un grupo primero.');
-          continue;
-        }
+        if (!user?.circleMembership) continue;
 
         const circleId = user.circleMembership.groupId;
         const categoryId = await this.resolveCategory(userId, circleId, text);
+
+        const senderName = msg.key?.fromMe
+          ? ''
+          : (msg.pushName ? `${msg.pushName}: ` : '');
 
         const created = await this.transactionService.createExpense(userId, circleId, {
           amount: parsed.amount,
           currency: parsed.currency,
           categoryId,
-          description: parsed.description,
+          description: senderName + parsed.description,
           source: 'whatsapp' as any,
           confirmationStatus: 'pending_confirmation',
           transactionDate: new Date().toISOString(),
@@ -223,9 +231,56 @@ export class WhatsappService implements OnModuleDestroy {
         this.logger.log(`Expense created via WhatsApp for user ${userId}: ${created.id}`);
       } catch (err) {
         this.logger.error(`Failed to create expense from WhatsApp: ${err.message}`);
-        await this.sendReply(userId, msg.key.remoteJid, `Error al cargar el gasto: ${err.message}`);
       }
     }
+  }
+
+  async listWhatsappGroups(userId: string): Promise<{ id: string; name: string; isExpenseGroup: boolean }[]> {
+    const session = this.sessions.get(userId);
+    if (!session?.sock || session.status !== 'connected') {
+      return [];
+    }
+
+    let groups: any[] = [];
+    try {
+      groups = await session.sock.groupFetchAllParticipating();
+    } catch (err) {
+      this.logger.error(`Failed to fetch WhatsApp groups: ${err.message}`);
+      return [];
+    }
+
+    const expenseGroups = await this.prisma.whatsappGroup.findMany({
+      where: { userId },
+      select: { groupJid: true },
+    });
+    const expenseJids = new Set(expenseGroups.map((g) => g.groupJid));
+
+    return Object.entries(groups).map(([jid, meta]: [string, any]) => ({
+      id: jid,
+      name: meta.subject || meta.name || jid,
+      isExpenseGroup: expenseJids.has(jid),
+    }));
+  }
+
+  async getExpenseGroups(userId: string): Promise<{ id: string; groupJid: string; groupName: string | null }[]> {
+    return this.prisma.whatsappGroup.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async addExpenseGroup(userId: string, groupJid: string, groupName?: string): Promise<void> {
+    await this.prisma.whatsappGroup.upsert({
+      where: { userId_groupJid: { userId, groupJid } },
+      update: { groupName },
+      create: { userId, groupJid, groupName },
+    });
+  }
+
+  async removeExpenseGroup(userId: string, groupJid: string): Promise<void> {
+    await this.prisma.whatsappGroup.deleteMany({
+      where: { userId, groupJid },
+    });
   }
 
   private async resolveCategory(userId: string, circleId: string, text: string): Promise<string> {
