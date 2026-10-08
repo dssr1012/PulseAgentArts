@@ -8,10 +8,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 // In-memory access token storage (XSS-safe, not accessible from localStorage)
 let _accessToken: string | null = null;
+let _activeCircleId: string | null = null;
 
 class ApiClient {
   private client: AxiosInstance;
-  private refreshPromise: Promise<string> | null = null;
+  private refreshPromise: Promise<{ accessToken: string; user: Record<string, unknown> | null }> | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -36,6 +37,10 @@ class ApiClient {
         }
         // Add correlation ID
         config.headers['X-Correlation-ID'] = this.generateCorrelationId();
+        // Add active circle ID header for multi-circle support
+        if (_activeCircleId) {
+          config.headers['X-Circle-Id'] = _activeCircleId;
+        }
         // Frontend uses snake_case; backend expects camelCase — convert JSON bodies
         if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
           config.data = this.snakeToCamel(config.data);
@@ -72,8 +77,8 @@ class ApiClient {
           originalRequest._retry = true;
 
           try {
-            const newAccessToken = await this.refreshTokens();
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            const result = await this.refreshTokens();
+            originalRequest.headers.Authorization = `Bearer ${result.accessToken}`;
             return this.client(originalRequest);
           } catch (refreshError) {
             this.clearTokens();
@@ -101,28 +106,56 @@ class ApiClient {
     _accessToken = null;
   }
 
-  private async refreshTokens(): Promise<string> {
+  setActiveCircleId(circleId: string | null): void {
+    _activeCircleId = circleId;
+  }
+
+  getActiveCircleId(): string | null {
+    return _activeCircleId;
+  }
+
+  private async refreshTokens(): Promise<{ accessToken: string; user: Record<string, unknown> | null }> {
     if (this.refreshPromise) return this.refreshPromise;
 
     this.refreshPromise = (async () => {
       try {
-        // Refresh token is sent automatically via HttpOnly cookie (withCredentials)
-        const response = await axios.post<{ accessToken: string }>(
+        const response = await axios.post<{ accessToken: string; user?: unknown }>(
           `${API_BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true },
         );
-        // Raw axios bypasses the interceptor — unwrap envelope manually
-        const body = response.data as unknown as { success?: boolean; data?: { accessToken: string }; accessToken?: string };
+        const body = response.data as unknown as { success?: boolean; data?: { accessToken: string; user?: unknown }; accessToken?: string; user?: unknown };
         const accessToken = body.data?.accessToken ?? body.accessToken ?? '';
+        const rawUser = body.data?.user ?? body.user ?? null;
         this.setAccessToken(accessToken);
-        return accessToken;
+        const user = rawUser ? this.camelToSnake(rawUser) as Record<string, unknown> : null;
+        return { accessToken, user };
       } finally {
         this.refreshPromise = null;
       }
     })();
 
     return this.refreshPromise;
+  }
+
+  async restoreSession(): Promise<{ accessToken: string; user: Record<string, unknown> } | null> {
+    try {
+      const result = await this.refreshTokens();
+      if (result.accessToken && result.user) {
+        return { accessToken: result.accessToken, user: result.user };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  async refreshSession(): Promise<void> {
+    try {
+      await this.refreshTokens();
+    } catch {
+      this.clearTokens();
+    }
   }
 
   private camelToSnake(obj: unknown): unknown {
@@ -220,6 +253,11 @@ class ApiClient {
   }
 
   // ============ Circle API ============
+
+  async getUserCircles() {
+    const response = await this.client.get('/circles');
+    return response.data as { id: string; name: string; role: string; base_currency?: string }[];
+  }
 
   async getCircle(circleId: string) {
     const response = await this.client.get(`/circles/${circleId}`);

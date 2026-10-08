@@ -63,7 +63,7 @@ export class AuthController {
     }
     const result = await this.authService.refresh({ refreshToken });
     this.setRefreshTokenCookie(res, result.refreshToken);
-    return { accessToken: result.accessToken };
+    return { accessToken: result.accessToken, user: result.user };
   }
 
   @Get('google')
@@ -178,12 +178,13 @@ export class AuthController {
 
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {
     const isProduction = process.env.NODE_ENV === 'production';
+    const timeoutMinutes = Math.min(Number(process.env.SESSION_TIMEOUT_MINUTES) || 20, 20);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'strict' : 'lax',
       path: '/api/v1/auth',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: timeoutMinutes * 60 * 1000,
     });
   }
 

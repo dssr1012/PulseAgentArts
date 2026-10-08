@@ -121,7 +121,7 @@ export class AuthService {
     };
   }
 
-  async refresh(dto: RefreshDto): Promise<{ accessToken: string; refreshToken: string }> {
+  async refresh(dto: RefreshDto): Promise<{ accessToken: string; refreshToken: string; user: UserResponseDto }> {
     const tokenHash = crypto
       .createHash('sha256')
       .update(dto.refreshToken)
@@ -147,8 +147,9 @@ export class AuthService {
 
     // Generate new token pair
     const { accessToken, refreshToken } = await this.generateTokenPair(storedToken.user);
+    const user = await this.buildUserResponse(storedToken.user);
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, user };
   }
 
   async logout(userId: string, refreshToken?: string): Promise<void> {
@@ -211,7 +212,7 @@ export class AuthService {
   async validateUserById(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      include: { circleMembership: true },
+      include: { circleMemberships: { include: { group: true } } },
     });
   }
 
@@ -317,15 +318,23 @@ export class AuthService {
   }
 
   private async generateTokenPair(user: any): Promise<{ accessToken: string; refreshToken: string }> {
-    const membership = await this.prisma.familyGroupMember.findUnique({
+    const memberships = await this.prisma.familyGroupMember.findMany({
       where: { userId: user.id },
+      include: { group: true },
     });
+
+    const circles = memberships.map((m) => ({
+      id: m.group.id,
+      name: m.group.name,
+      role: m.role,
+    }));
 
     const payload = {
       sub: user.id,
       email: user.email,
-      circleId: membership?.groupId || null,
-      role: membership?.role || null,
+      circleId: circles.length > 0 ? circles[0].id : null,
+      role: circles.length > 0 ? circles[0].role : null,
+      circles,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -353,7 +362,7 @@ export class AuthService {
     // Cache session in Redis
     await this.redis.setJSON(
       `session:${user.id}`,
-      { userId: user.id, circleId: membership?.groupId || null },
+      { userId: user.id, circleId: circles.length > 0 ? circles[0].id : null, circles },
       86400, // 24h
     );
 
@@ -361,9 +370,16 @@ export class AuthService {
   }
 
   private async buildUserResponse(user: any): Promise<UserResponseDto> {
-    const membership = await this.prisma.familyGroupMember.findUnique({
+    const memberships = await this.prisma.familyGroupMember.findMany({
       where: { userId: user.id },
+      include: { group: true },
     });
+
+    const circles = memberships.map((m) => ({
+      id: m.group.id,
+      name: m.group.name,
+      role: m.role,
+    }));
 
     return {
       id: user.id,
@@ -371,8 +387,9 @@ export class AuthService {
       givenName: user.givenName,
       pictureUrl: user.pictureUrl,
       authProvider: user.authProvider,
-      circleId: membership?.groupId || null,
-      role: membership?.role || null,
+      circleId: circles.length > 0 ? circles[0].id : null,
+      role: circles.length > 0 ? circles[0].role : null,
+      circles,
       mustChangePassword: user.mustChangePassword || false,
     };
   }

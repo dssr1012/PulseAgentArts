@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { User, ApiError } from '@/types';
 import { apiClient } from '@/lib/api';
 
@@ -12,12 +12,15 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  activeCircleId: string | null;
+  login: (email: string, password: string) => Promise<User>;
   register: (email: string, password: string, givenName: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   refreshUser: () => Promise<void>;
+  refreshCircles: () => Promise<void>;
+  setActiveCircle: (circleId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -41,12 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
     error: null,
   });
-
-  // No async session check on mount: access token is in memory only and is lost
-  // on reload, so the user is always unauthenticated on a fresh page load.
-  useEffect(() => {
-    setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
-  }, []);
+  const [activeCircleId, setActiveCircleIdState] = useState<string | null>(null);
 
   const handleAuthSuccess = useCallback((response: Record<string, unknown>): User => {
     // After camelToSnake conversion, accessToken → access_token
@@ -61,9 +59,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       auth_provider: (u.auth_provider ?? u.authProvider ?? 'traditional') as User['auth_provider'],
       circle_id: (u.circle_id ?? u.circleId ?? null) as string | null,
       circle_role: (u.circle_role ?? u.role ?? null) as User['circle_role'],
+      circles: (u.circles ?? []) as User['circles'],
       created_at: (u.created_at ?? u.createdAt ?? '') as string,
       must_change_password: (u.must_change_password ?? u.mustChangePassword ?? false) as boolean,
     };
+    // Set active circle: prefer localStorage, else first circle
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('activeCircleId') : null;
+    const activeId = (stored && user.circles.some((c) => c.id === stored)) ? stored : (user.circles[0]?.id ?? null);
+    setActiveCircleIdState(activeId);
+    apiClient.setActiveCircleId(activeId);
     setState({
       user,
       isLoading: false,
@@ -72,6 +76,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return user;
   }, []);
+
+  // Restore session on mount by calling refresh endpoint (uses HttpOnly cookie)
+  useEffect(() => {
+    let cancelled = false;
+
+    const restore = async () => {
+      setState((prev) => ({ ...prev, isLoading: true }));
+      try {
+        const result = await apiClient.restoreSession();
+        if (!cancelled && result) {
+          handleAuthSuccess(result);
+        } else if (!cancelled) {
+          setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
+        }
+      } catch {
+        if (!cancelled) {
+          setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
+        }
+      }
+    };
+
+    restore();
+
+    return () => { cancelled = true; };
+  }, [handleAuthSuccess]);
 
   const login = useCallback(async (email: string, password: string): Promise<User> => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -211,6 +240,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await apiClient.logout();
     } finally {
       apiClient.clearTokens();
+      apiClient.setActiveCircleId(null);
+      setActiveCircleIdState(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('activeCircleId');
+      }
       setState({ user: null, isLoading: false, isAuthenticated: false, error: null });
     }
   }, []);
@@ -235,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             auth_provider: payload.authProvider || payload.auth_provider || prev.user?.auth_provider || 'traditional',
             circle_id: payload.circleId || payload.circle_id || prev.user?.circle_id || null,
             circle_role: payload.role || payload.circleRole || prev.user?.circle_role || null,
+            circles: payload.circles || prev.user?.circles || [],
             created_at: payload.createdAt || payload.created_at || prev.user?.created_at || '',
             must_change_password: payload.mustChangePassword || payload.must_change_password || prev.user?.must_change_password || false,
           },
@@ -247,16 +282,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const setActiveCircle = useCallback((circleId: string) => {
+    setActiveCircleIdState(circleId);
+    apiClient.setActiveCircleId(circleId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activeCircleId', circleId);
+    }
+  }, []);
+
+  const refreshCircles = useCallback(async () => {
+    try {
+      const circles = await apiClient.getUserCircles();
+      setState((prev) => ({
+        ...prev,
+        user: prev.user ? { ...prev.user, circles: circles.map((c) => ({ id: c.id, name: c.name, role: c.role })) } : null,
+      }));
+      // If no active circle or active circle no longer exists, set to first
+      const current = apiClient.getActiveCircleId();
+      if (!current || !circles.some((c) => c.id === current)) {
+        const firstId = circles[0]?.id ?? null;
+        if (firstId) {
+          setActiveCircle(firstId);
+        }
+      }
+    } catch {
+      // ignore — user can retry
+    }
+  }, [setActiveCircle]);
+
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+
+  useEffect(() => {
+    if (!state.isAuthenticated) return;
+
+    const timeoutMinutes = Math.min(Number(process.env.NEXT_PUBLIC_SESSION_TIMEOUT_MINUTES) || 20, 20);
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    const refreshIntervalMs = Math.min(Math.floor(timeoutMs / 2), 4 * 60 * 1000);
+
+    let lastActivity = Date.now();
+    let idleTimer: ReturnType<typeof setTimeout>;
+
+    const resetIdleTimer = () => {
+      lastActivity = Date.now();
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        logoutRef.current();
+      }, timeoutMs);
+    };
+
+    const refreshInterval = setInterval(() => {
+      if (Date.now() - lastActivity < timeoutMs) {
+        apiClient.refreshSession();
+      }
+    }, refreshIntervalMs);
+
+    const activityEvents: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'touchstart', 'scroll', 'click'];
+    for (const event of activityEvents) {
+      window.addEventListener(event, resetIdleTimer, { passive: true });
+    }
+
+    resetIdleTimer();
+
+    return () => {
+      clearTimeout(idleTimer);
+      clearInterval(refreshInterval);
+      for (const event of activityEvents) {
+        window.removeEventListener(event, resetIdleTimer);
+      }
+    };
+  }, [state.isAuthenticated]);
+
   return (
     <AuthContext.Provider
       value={{
         ...state,
+        activeCircleId,
         login,
         register,
         loginWithGoogle,
         logout,
         clearError,
         refreshUser,
+        refreshCircles,
+        setActiveCircle,
       }}
     >
       {children}
