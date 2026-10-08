@@ -177,23 +177,23 @@ export class AuthController {
   }
 
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieSecure = process.env.COOKIE_SECURE === 'true';
     const timeoutMinutes = Math.min(Number(process.env.SESSION_TIMEOUT_MINUTES) || 20, 20);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
+      secure: cookieSecure,
+      sameSite: 'lax',
       path: '/api/v1/auth',
       maxAge: timeoutMinutes * 60 * 1000,
     });
   }
 
   private clearRefreshTokenCookie(res: Response): void {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieSecure = process.env.COOKIE_SECURE === 'true';
     res.cookie('refresh_token', '', {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
+      secure: cookieSecure,
+      sameSite: 'lax',
       path: '/api/v1/auth',
       maxAge: 0,
     });

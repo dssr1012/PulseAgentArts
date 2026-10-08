@@ -34,13 +34,13 @@ function decodeJwtPayload(token: string): any {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // isLoading starts false: the token is held in memory only, so there is no
-  // async session to restore on mount. Starting true would render the SSR HTML
-  // with all inputs disabled (disabled={isLoading}) and "Signing in..." on the
-  // button; if hydration then fails the page is frozen forever. False is correct.
+  // isLoading starts true because we attempt to restore the session on mount
+  // via the HttpOnly refresh-token cookie. The (authenticated) layout checks
+  // !isLoading && !isAuthenticated to redirect to /login — if we start false,
+  // the redirect fires before restoreSession() even runs.
   const [state, setState] = useState<AuthState>({
     user: null,
-    isLoading: false,
+    isLoading: true,
     isAuthenticated: false,
     error: null,
   });
