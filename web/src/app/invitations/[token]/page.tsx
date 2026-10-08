@@ -12,7 +12,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 export default function InvitationPage() {
   const router = useRouter();
   const params = useParams();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, refreshCircles, setActiveCircle } = useAuth();
   const { addToast } = useToast();
 
   const token = params.token as string;
@@ -53,9 +53,11 @@ export default function InvitationPage() {
 
     setIsAccepting(true);
     try {
-      await apiClient.acceptInvitation(token);
+      const result = await apiClient.acceptInvitation(token) as { group_id: string; role: string };
+      await refreshCircles();
+      setActiveCircle(result.group_id);
       addToast('success', 'You have joined the Family Circle!');
-      router.push('/dashboard');
+      router.push('/circle');
     } catch (err: unknown) {
       const apiError = err as { code?: string };
       if (apiError.code === 'CIRCLE_ALREADY_MEMBER') {
