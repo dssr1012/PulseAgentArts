@@ -15,6 +15,11 @@ RUN npm prune --production
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+ENV NODE_ENV=production
+ENV SERVICE_NAME=pulse-backend
+ENV SERVICE_VERSION=1.0.0
+ENV LOG_LEVEL=info
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
@@ -22,4 +27,4 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["node", "--enable-source-maps", "dist/main"]

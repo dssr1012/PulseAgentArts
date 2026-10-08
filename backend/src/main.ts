@@ -7,28 +7,41 @@ import { PrismaService } from './common/prisma.service';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { PinoLoggerService } from './common/logger/logger.service';
+import { logger } from './common/logger/logger';
+import { correlationMiddleware } from './common/middleware/correlation.middleware';
+
+process.on('uncaughtException', (err: Error) => {
+  logger.fatal({ err, event: 'uncaughtException' }, err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason: unknown) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  logger.fatal({ err, event: 'unhandledRejection' }, err.message);
+  process.exit(1);
+});
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  // Cookie parser (needed to read refresh token from HttpOnly cookie)
+  const pinoLogger = app.get(PinoLoggerService);
+  app.useLogger(pinoLogger);
+
+  app.use(correlationMiddleware);
   app.use(cookieParser());
 
-  // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  // API versioning
   app.enableVersioning({
     type: VersioningType.URI,
   });
 
-  // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3001'],
     credentials: true,
   });
 
-  // Global pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -38,16 +51,12 @@ async function bootstrap() {
     }),
   );
 
-  // Global filters and interceptors
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new TransformInterceptor());
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(new TransformInterceptor(), new LoggingInterceptor());
 
-  // Prisma shutdown hook
   const prismaService = app.get(PrismaService);
   await prismaService.enableShutdownHooks(app);
 
-  // Swagger
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('PulseExpends API')
@@ -62,7 +71,7 @@ async function bootstrap() {
   const host = process.env.HOST || '0.0.0.0';
   const port = process.env.PORT || 3000;
   await app.listen(port, host);
-  console.log(`🚀 PulseExpends API running on http://${host}:${port}`);
+  logger.info({ event: 'server_started', host, port: Number(port) }, `Server listening on http://${host}:${port}`);
 }
 
 bootstrap();

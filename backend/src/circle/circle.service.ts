@@ -22,18 +22,6 @@ export class CircleService {
   ) {}
 
   async createCircle(userId: string, name: string, baseCurrency: string = 'ARS') {
-    // Check single-circle constraint
-    const existingMembership = await this.prisma.familyGroupMember.findUnique({
-      where: { userId },
-    });
-
-    if (existingMembership) {
-      throw new ConflictException({
-        errorCode: 'CIRCLE_ALREADY_MEMBER',
-        message: 'You already belong to a Family Circle',
-      });
-    }
-
     // Create circle with admin and default categories in a transaction
     const circle = await this.prisma.$transaction(async (tx) => {
       const group = await tx.familyGroup.create({
@@ -75,6 +63,19 @@ export class CircleService {
 
     this.logger.log(`Circle created: ${circle.id} by user ${userId}`);
     return circle;
+  }
+
+  async listUserCircles(userId: string) {
+    const memberships = await this.prisma.familyGroupMember.findMany({
+      where: { userId },
+      include: { group: true },
+    });
+    return memberships.map((m) => ({
+      id: m.group.id,
+      name: m.group.name,
+      role: m.role,
+      baseCurrency: m.group.baseCurrency,
+    }));
   }
 
   async getCircle(circleId: string, userId: string) {
@@ -144,30 +145,29 @@ export class CircleService {
       });
     }
 
-    // Check if invitee is already a member
+    // Check if invitee is already a member of THIS circle
     const inviteeUser = await this.prisma.user.findUnique({ where: { email } });
     if (inviteeUser) {
       const inviteeMembership = await this.prisma.familyGroupMember.findUnique({
-        where: { userId: inviteeUser.id },
+        where: { groupId_userId: { groupId: circleId, userId: inviteeUser.id } },
       });
       if (inviteeMembership) {
         throw new ConflictException({
           errorCode: 'INVITE_ALREADY_MEMBER',
-          message: 'This user is already a member of a circle',
+          message: 'This user is already a member of this circle',
         });
       }
     }
 
     // Generate token with 128-bit entropy
-    const rawToken = crypto.randomBytes(
-      this.config.get<number>('INVITATION_TOKEN_BYTES', 16),
-    ).toString('hex');
+    const tokenBytes = Number(this.config.get('INVITATION_TOKEN_BYTES', 16)) || 16;
+    const rawToken = crypto.randomBytes(tokenBytes).toString('hex');
     const tokenHash = crypto
       .createHash('sha256')
       .update(rawToken)
       .digest('hex');
 
-    const ttlHours = this.config.get<number>('INVITATION_TTL_HOURS', 72);
+    const ttlHours = Number(this.config.get('INVITATION_TTL_HOURS', 72)) || 72;
     const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
 
     const invitation = await this.prisma.invitation.create({
@@ -188,7 +188,7 @@ export class CircleService {
         data: { status: 'sent' },
       });
     } catch (error) {
-      this.logger.error(`Failed to send invitation email: ${error.message}`);
+      this.logger.error({ err: error, event: 'invite_mail_error' }, `Failed to send invitation email: ${error?.message}`);
       await this.prisma.invitation.update({
         where: { id: invitation.id },
         data: { status: 'delivery_failed' },
@@ -240,9 +240,15 @@ export class CircleService {
       });
     }
 
+    const inviter = await this.prisma.user.findUnique({
+      where: { id: invitation.group.adminUserId },
+      select: { givenName: true },
+    });
+
     return {
       valid: true,
       circleName: invitation.group.name,
+      inviterName: inviter?.givenName ?? 'Someone',
       email: invitation.email,
       expiresAt: invitation.expiresAt,
     };
@@ -265,15 +271,15 @@ export class CircleService {
       });
     }
 
-    // Check single-circle constraint
+    // Check if already a member of THIS circle
     const existingMembership = await this.prisma.familyGroupMember.findUnique({
-      where: { userId },
+      where: { groupId_userId: { groupId: invitation.groupId, userId } },
     });
 
     if (existingMembership) {
       throw new ConflictException({
         errorCode: 'CIRCLE_ALREADY_MEMBER',
-        message: 'You already belong to a Family Circle',
+        message: 'You are already a member of this Family Circle',
       });
     }
 
@@ -370,18 +376,26 @@ export class CircleService {
     const baseUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
     const invitationLink = `${baseUrl}/invitations/${token}`;
 
+    const smtpHost = this.config.get<string>('SMTP_HOST');
+    const smtpPort = this.config.get<number>('SMTP_PORT', 587);
+    const smtpSecure = this.config.get<boolean>('SMTP_SECURE', false);
+    const smtpUser = this.config.get<string>('SMTP_USER');
+    const smtpPass = this.config.get<string>('SMTP_PASS');
+    const emailFrom = this.config.get<string>('EMAIL_FROM', 'noreply@pulseexpends.com');
+    this.logger.log(`[MAIL DEBUG] host=${smtpHost} port=${smtpPort} secure=${smtpSecure} user=${smtpUser ? 'SET' : 'UNSET'} pass=${smtpPass ? 'SET' : 'UNSET'} from=${emailFrom}`);
+
     const transporter = nodemailer.createTransport({
-      host: this.config.get<string>('SMTP_HOST'),
-      port: this.config.get<number>('SMTP_PORT', 587),
-      secure: this.config.get<boolean>('SMTP_SECURE', false),
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
       auth: {
-        user: this.config.get<string>('SMTP_USER'),
-        pass: this.config.get<string>('SMTP_PASS'),
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
     await transporter.sendMail({
-      from: this.config.get<string>('EMAIL_FROM', 'noreply@pulseexpends.com'),
+      from: emailFrom,
       to: email,
       subject: 'Invitación a Círculo Familiar - PulseExpends',
       html: `

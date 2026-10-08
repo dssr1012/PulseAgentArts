@@ -15,6 +15,7 @@ import { RegexDictModule } from './regex-dict/regex-dict.module';
 import { AuditModule } from './audit/audit.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { CommonModule } from './common/common.module';
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CommonModule } from './common/common.module';
       envFilePath: ['.env', '../.env'],
     }),
     ScheduleModule.forRoot(),
+    LoggerModule,
     CommonModule,
     AuthModule,
     CircleModule,

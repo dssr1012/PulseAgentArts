@@ -13,6 +13,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -20,10 +25,15 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     build:
@@ -39,36 +49,56 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
+      SERVICE_NAME: pulse-backend
+      SERVICE_VERSION: 1.0.0
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       DATABASE_URL: postgresql://${POSTGRES_USER:-pulseexpends}:${POSTGRES_PASSWORD:-pulseexpends_dev}@postgres:5432/${POSTGRES_DB:-pulseexpends}?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_PRIVATE_KEY_PATH: /app/keys/private.pem
       JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
-      # Allow the public origin through CORS (comma-separated). With the relative
-      # /api/v1 default the browser is same-origin so CORS is not even triggered,
-      # but set this in case an absolute API URL is configured.
       CORS_ORIGINS: ${CORS_ORIGINS:-http://159.138.118.60,http://localhost:3001}
     volumes:
       - ./backend/keys:/app/keys:ro
       - ./backend/uploads:/app/uploads
     ports:
       - "3000:3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   web:
     build:
       context: ./web
       dockerfile: Dockerfile
       args:
-        # Baked into the Next.js bundle at build time. Relative /api/v1 keeps
-        # requests same-origin through nginx (no CORS, works for every visitor).
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
-        # Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable the "Continue with Google" button.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     depends_on:
       - backend
     ports:
       - "3001:3001"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  fluent-bit:
+    image: fluent/fluent-bit:3.0
+    restart: unless-stopped
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   pgdata:

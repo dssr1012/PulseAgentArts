@@ -4,14 +4,12 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { logger, getCorrelationContext } from '../logger/logger';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
-
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -37,19 +35,36 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = exception.message;
     }
 
-    const traceId = request.headers['x-trace-id'] as string || crypto.randomUUID();
+    const correlationCtx = getCorrelationContext();
+    const traceId = (request.headers['x-trace-id'] as string) || correlationCtx?.trace_id || crypto.randomUUID();
 
-    this.logger.error(
-      JSON.stringify({
-        traceId,
-        method: request.method,
-        url: request.url,
-        statusCode: status,
-        errorCode,
-        message,
-        timestamp: new Date().toISOString(),
-      }),
-    );
+    const logData: Record<string, unknown> = {
+      event: 'http_exception',
+      trace_id: traceId,
+      span_id: correlationCtx?.span_id,
+      req_id: correlationCtx?.req_id,
+      method: request.method,
+      url: request.url,
+      status_code: status,
+      error_code: errorCode,
+      message,
+    };
+
+    if (exception instanceof Error && !(exception instanceof HttpException)) {
+      logData.err = {
+        type: exception.constructor.name,
+        message: exception.message,
+        stack: exception.stack,
+      };
+    } else if (exception instanceof HttpException && status >= 500) {
+      logData.err = {
+        type: exception.constructor.name,
+        message: exception.message,
+        stack: exception.stack,
+      };
+    }
+
+    logger.error(logData, `${request.method} ${request.url} ${status} ${errorCode}`);
 
     response.status(status).json({
       statusCode: status,
