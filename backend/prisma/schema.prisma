@@ -102,7 +102,7 @@ model User {
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
-  circleMembership     FamilyGroupMember?
+  circleMemberships    FamilyGroupMember[]
   transactions         Transaction[]
   refreshTokens        RefreshToken[]
   whatsappGroups       WhatsappGroup[]
@@ -163,7 +163,7 @@ model FamilyGroup {
 
 model FamilyGroupMember {
   groupId  String    @map("group_id")
-  userId   String    @map("user_id") @unique
+  userId   String    @map("user_id")
   role     CircleRole @default(member)
   joinedAt DateTime  @default(now()) @map("joined_at")
 

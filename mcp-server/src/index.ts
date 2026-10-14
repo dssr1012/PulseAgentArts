@@ -21,13 +21,11 @@ if (JWT_PUBLIC_KEY_PATH && fs.existsSync(JWT_PUBLIC_KEY_PATH)) {
   verifyKey = JWT_SECRET;
   verifyAlgorithms = ['HS256'];
 } else {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('FATAL: JWT_SECRET or JWT_PUBLIC_KEY_PATH is required in production');
-    process.exit(1);
-  }
-  console.warn('WARNING: No JWT key configured. Using insecure default. Do NOT use in production!');
-  verifyKey = 'pulse-expends-dev-secret';
-  verifyAlgorithms = ['HS256'];
+  console.error(
+    'FATAL: JWT_SECRET or JWT_PUBLIC_KEY_PATH is required. ' +
+    'Copy .env.example to .env and configure your secrets.',
+  );
+  process.exit(1);
 }
 
 // Create MCP server

@@ -13,14 +13,13 @@ export class StatementPasswordCrypto {
 
   constructor(private config: ConfigService) {
     const envKey = this.config.get<string>('STATEMENT_PASSWORD_KEY');
-    if (envKey) {
-      this.key = crypto.createHash('sha256').update(envKey).digest();
-    } else {
-      this.logger.warn(
-        'STATEMENT_PASSWORD_KEY not set — using deterministic dev key. Set a random value in production.',
+    if (!envKey) {
+      throw new Error(
+        'STATEMENT_PASSWORD_KEY environment variable is required. ' +
+        'Generate a random key (e.g. openssl rand -hex 32) and set it in .env.',
       );
-      this.key = crypto.createHash('sha256').update('pulseexpends-dev-statement-key').digest();
     }
+    this.key = crypto.createHash('sha256').update(envKey).digest();
   }
 
   encrypt(plaintext: string): string {

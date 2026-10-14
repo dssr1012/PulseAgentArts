@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pulseexpends}
       POSTGRES_USER: ${POSTGRES_USER:-pulseexpends}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pulseexpends_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -52,12 +52,14 @@ services:
       SERVICE_NAME: pulse-backend
       SERVICE_VERSION: 1.0.0
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-pulseexpends}:${POSTGRES_PASSWORD:-pulseexpends_dev}@postgres:5432/${POSTGRES_DB:-pulseexpends}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pulseexpends}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-pulseexpends}?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_PRIVATE_KEY_PATH: /app/keys/private.pem
       JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://159.138.118.60,http://localhost:3001}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must be set in .env}
+      STATEMENT_PASSWORD_KEY: ${STATEMENT_PASSWORD_KEY:?STATEMENT_PASSWORD_KEY must be set in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
     volumes:
       - ./backend/keys:/app/keys:ro
       - ./backend/uploads:/app/uploads

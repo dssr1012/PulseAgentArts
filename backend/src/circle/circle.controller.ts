@@ -34,6 +34,14 @@ export class CircleController {
     return this.circleService.createCircle(userId, dto.name, dto.baseCurrency);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'List all circles the user belongs to' })
+  async listUserCircles(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.circleService.listUserCircles(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get circle details with member list' })
   async getCircle(

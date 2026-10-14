@@ -202,11 +202,11 @@ export class WhatsappService implements OnModuleDestroy {
       try {
         const user = await this.prisma.user.findUnique({
           where: { id: userId },
-          include: { circleMembership: true },
+          include: { circleMemberships: true },
         });
-        if (!user?.circleMembership) continue;
+        if (!user?.circleMemberships || user.circleMemberships.length === 0) continue;
 
-        const circleId = user.circleMembership.groupId;
+        const circleId = user.circleMemberships[0].groupId;
         const categoryId = await this.resolveCategory(userId, circleId, text);
 
         const senderName = msg.key?.fromMe

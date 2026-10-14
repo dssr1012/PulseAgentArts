@@ -44,13 +44,13 @@ if (googleProviders.length === 0) {
 
         const secret = config.get<string>('JWT_SECRET');
         if (!secret) {
-          if (config.get<string>('NODE_ENV') === 'production') {
-            throw new Error('JWT_SECRET environment variable is required in production');
-          }
-          logger.warn('JWT_SECRET is not set. Using insecure default. Do NOT use in production!');
+          throw new Error(
+            'JWT_SECRET environment variable is required (or set JWT_PRIVATE_KEY_PATH/JWT_PUBLIC_KEY_PATH for RSA keys). ' +
+            'Copy .env.example to .env and configure your secrets.',
+          );
         }
         return {
-          secret: secret || 'pulse-expends-dev-secret',
+          secret,
           signOptions: {
             expiresIn: config.get<string>('JWT_ACCESS_TTL', '24h'),
             issuer: config.get<string>('JWT_ISSUER', 'pulseexpends'),

@@ -3,9 +3,10 @@ import { PrismaService } from '../../common/prisma.service';
 import { Request } from 'express';
 
 /**
- * Guard that validates the user's current circle membership in the database.
- * This prevents stale JWT claims from granting access to circle-scoped resources
- * after a user has been removed from a circle.
+ * Guard that validates the user's circle membership in the database.
+ * Reads the active circle from the X-Circle-Id header (or falls back to the
+ * first membership from the JWT). Verifies the user is still a member of
+ * that circle in the DB, then sets circleId/role on request.user.
  */
 @Injectable()
 export class CircleMembershipGuard implements CanActivate {
@@ -22,23 +23,38 @@ export class CircleMembershipGuard implements CanActivate {
       });
     }
 
-    // Verify current membership in the database (not just from JWT)
-    const membership = await this.prisma.familyGroupMember.findUnique({
+    // Determine the active circle: X-Circle-Id header > JWT circleId > first from DB
+    const headerCircleId = request.headers['x-circle-id'] as string | undefined;
+    const targetCircleId = headerCircleId || user.circleId || null;
+
+    // Fetch all memberships for the user
+    const memberships = await this.prisma.familyGroupMember.findMany({
       where: { userId: user.id },
     });
 
-    if (!membership) {
+    if (memberships.length === 0) {
       throw new ForbiddenException({
         errorCode: 'CIRCLE_NOT_FOUND',
-        message: 'You are no longer a member of a Family Circle',
+        message: 'You are not a member of any Family Circle',
       });
+    }
+
+    // If a specific circle was requested, verify membership
+    let activeMembership;
+    if (targetCircleId) {
+      activeMembership = memberships.find((m) => m.groupId === targetCircleId);
+    }
+    if (!activeMembership) {
+      // Fall back to first membership
+      activeMembership = memberships[0];
     }
 
     // Update request.user with fresh membership data from DB
     request.user = {
       ...user,
-      circleId: membership.groupId,
-      role: membership.role,
+      circleId: activeMembership.groupId,
+      role: activeMembership.role,
+      circles: memberships.map((m) => ({ id: m.groupId, role: m.role })),
     };
 
     return true;

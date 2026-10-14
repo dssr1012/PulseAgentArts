@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/Tabs';
 import { Plus, Tag, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function CategoriesPage() {
-  const { user } = useAuth();
+  const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -22,25 +22,25 @@ export default function CategoriesPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchCategories = useCallback(async () => {
-    if (!user?.circle_id) return;
+    if (!activeCircleId) return;
     setIsLoading(true);
     try {
-      const data = await apiClient.getCategories(user.circle_id);
+      const data = await apiClient.getCategories(activeCircleId);
       setCategories(data);
     } catch {
       addToast('error', 'Failed to load categories.');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.circle_id, addToast]);
+  }, [activeCircleId, addToast]);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
   const handleCreate = async () => {
-    if (!newCategoryName.trim() || !user?.circle_id) return;
+    if (!newCategoryName.trim() || !activeCircleId) return;
     setIsCreating(true);
     try {
-      await apiClient.createCategory(user.circle_id, { name: newCategoryName.trim(), icon: newCategoryIcon || undefined });
+      await apiClient.createCategory(activeCircleId, { name: newCategoryName.trim(), icon: newCategoryIcon || undefined });
       addToast('success', 'Category created.');
       setShowAddModal(false);
       setNewCategoryName('');

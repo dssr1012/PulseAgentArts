@@ -62,11 +62,10 @@ export class JwtAuthGuard implements CanActivate {
 
     const secret = this.config.get<string>('JWT_SECRET');
     if (!secret) {
-      if (this.config.get<string>('NODE_ENV') === 'production') {
-        throw new Error('JWT_SECRET environment variable is required in production');
-      }
-      this.logger.warn('JWT_SECRET is not set. Using insecure default. Do NOT use in production!');
-      return 'pulse-expends-dev-secret';
+      throw new Error(
+        'JWT_SECRET environment variable is required (or set JWT_PUBLIC_KEY_PATH for RSA keys). ' +
+        'Copy .env.example to .env and configure your secrets.',
+      );
     }
     return secret;
   }

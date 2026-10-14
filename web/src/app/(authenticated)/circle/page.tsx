@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 export default function CirclePage() {
-  const { user } = useAuth();
+  const { user, activeCircleId, setActiveCircle, refreshCircles } = useAuth();
   const { addToast } = useToast();
 
   const [circleDetail, setCircleDetail] = useState<CircleDetail | null>(null);
@@ -45,23 +45,29 @@ export default function CirclePage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
 
+  const circles = user?.circles ?? [];
+  const currentCircle = circles.find((c) => c.id === activeCircleId);
+
   const fetchCircle = useCallback(async () => {
     setIsLoading(true);
     try {
-      if (user?.circle_id) {
+      if (activeCircleId) {
         const [circleData, inviteData] = await Promise.allSettled([
-          apiClient.getCircle(user.circle_id),
-          apiClient.getInvitations(user.circle_id),
+          apiClient.getCircle(activeCircleId),
+          apiClient.getInvitations(activeCircleId),
         ]);
         if (circleData.status === 'fulfilled') setCircleDetail(circleData.value);
         if (inviteData.status === 'fulfilled') setInvitations(inviteData.value);
+      } else {
+        setCircleDetail(null);
+        setInvitations([]);
       }
     } catch {
       addToast('error', 'Failed to load circle data.');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.circle_id, addToast]);
+  }, [activeCircleId, addToast]);
 
   useEffect(() => { fetchCircle(); }, [fetchCircle]);
 
@@ -72,14 +78,13 @@ export default function CirclePage() {
       await apiClient.createCircle({ name: circleName, base_currency: baseCurrency });
       addToast('success', 'Family Circle created! You are now the administrator.');
       setShowCreateModal(false);
+      setCircleName('');
+      // Refresh user to get updated circles list
+      await refreshCircles();
+      // The new circle will be picked up from the updated user.circles
       fetchCircle();
-    } catch (err: unknown) {
-      const error = err as { code?: string };
-      if (error.code === 'CIRCLE_ALREADY_MEMBER') {
-        addToast('warning', 'You already belong to a Family Circle.');
-      } else {
-        addToast('error', 'Failed to create circle.');
-      }
+    } catch {
+      addToast('error', 'Failed to create circle.');
     } finally {
       setIsCreating(false);
     }
@@ -87,10 +92,10 @@ export default function CirclePage() {
 
   const handleSendInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.circle_id) return;
+    if (!activeCircleId) return;
     setIsInviting(true);
     try {
-      await apiClient.sendInvitation(user.circle_id, inviteEmail);
+      await apiClient.sendInvitation(activeCircleId, inviteEmail);
       addToast('success', `Invitation sent to ${inviteEmail}`);
       setShowInviteModal(false);
       setInviteEmail('');
@@ -98,7 +103,7 @@ export default function CirclePage() {
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'INVITE_ALREADY_MEMBER') {
-        addToast('warning', 'This email is already a member of the circle.');
+        addToast('warning', 'This email is already a member of this circle.');
       } else {
         addToast('error', 'Failed to send invitation.');
       }
@@ -108,9 +113,9 @@ export default function CirclePage() {
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!user?.circle_id || !confirm('Remove this member from the circle?')) return;
+    if (!activeCircleId || !confirm('Remove this member from the circle?')) return;
     try {
-      await apiClient.removeMember(user.circle_id, userId);
+      await apiClient.removeMember(activeCircleId, userId);
       addToast('success', 'Member removed.');
       fetchCircle();
     } catch {
@@ -119,9 +124,9 @@ export default function CirclePage() {
   };
 
   const handleChangeCurrency = async (newCurrency: Currency) => {
-    if (!user?.circle_id) return;
+    if (!activeCircleId) return;
     try {
-      await apiClient.updateCircleCurrency(user.circle_id, newCurrency);
+      await apiClient.updateCircleCurrency(activeCircleId, newCurrency);
       addToast('success', 'Base currency updated.');
       fetchCircle();
     } catch {
@@ -131,12 +136,36 @@ export default function CirclePage() {
 
   if (isLoading) return <LoadingOverlay />;
 
-  const isAdmin = user?.circle_role === 'admin';
+  const isAdmin = currentCircle?.role === 'admin';
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
+      {/* Circle Selector + Create button */}
+      <div className="flex items-center justify-between gap-4">
+        {circles.length > 0 && (
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Circle:</label>
+            <select
+              value={activeCircleId ?? ''}
+              onChange={(e) => setActiveCircle(e.target.value)}
+              className="select-field w-auto min-w-[200px]"
+            >
+              {circles.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.role === 'admin' ? '(Admin)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button onClick={() => setShowCreateModal(true)} className="btn-secondary flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">New Circle</span>
+        </button>
+      </div>
+
       {!circleDetail ? (
-        /* No circle yet - show create form */
+        /* No circle selected - show create form */
         <div className="max-w-lg mx-auto">
           <EmptyState
             icon={<Users className="h-12 w-12" />}

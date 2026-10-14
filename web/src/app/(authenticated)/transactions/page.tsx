@@ -28,7 +28,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 export default function TransactionsPage() {
-  const { user } = useAuth();
+  const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
   const searchParams = useSearchParams();
 
@@ -61,13 +61,13 @@ export default function TransactionsPage() {
   }, [searchParams]);
 
   const fetchData = useCallback(async () => {
-    if (!user?.circle_id) { setIsLoading(false); return; }
+    if (!activeCircleId) { setIsLoading(false); return; }
     setIsLoading(true);
     try {
       const [expensesData, incomesData, categoriesData] = await Promise.all([
         apiClient.getExpenses({ ...filters, limit: 100 }),
         apiClient.getIncomes({ ...filters, limit: 100 }),
-        apiClient.getCategories(user.circle_id),
+        apiClient.getCategories(activeCircleId),
       ]);
       const combined = [
         ...(expensesData.data || []),
@@ -83,19 +83,19 @@ export default function TransactionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.circle_id, filters, addToast]);
+  }, [activeCircleId, filters, addToast]);
 
   useEffect(() => {
     let cancelled = false;
 
     const doFetch = async () => {
-      if (!user?.circle_id) { if (!cancelled) setIsLoading(false); return; }
+      if (!activeCircleId) { if (!cancelled) setIsLoading(false); return; }
       if (!cancelled) setIsLoading(true);
       try {
         const [expensesData, incomesData, categoriesData] = await Promise.all([
           apiClient.getExpenses({ ...filters, limit: 100 }),
           apiClient.getIncomes({ ...filters, limit: 100 }),
-          apiClient.getCategories(user.circle_id),
+          apiClient.getCategories(activeCircleId),
         ]);
         if (cancelled) return;
         const combined = [
@@ -116,7 +116,7 @@ export default function TransactionsPage() {
 
     doFetch();
     return () => { cancelled = true; };
-  }, [user?.circle_id, filters, addToast]);
+  }, [activeCircleId, filters, addToast]);
 
   const filteredTransactions = searchQuery
     ? allTransactions.filter(t =>

@@ -32,11 +32,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     const secret = config.get<string>('JWT_SECRET');
     if (!secret) {
-      if (config.get<string>('NODE_ENV') === 'production') {
-        throw new Error('JWT_SECRET environment variable is required in production');
-      }
-      new Logger('JwtStrategy').warn('JWT_SECRET is not set. Using insecure default. Do NOT use in production!');
-      return { key: 'pulse-expends-dev-secret' };
+      throw new Error(
+        'JWT_SECRET environment variable is required (or set JWT_PUBLIC_KEY_PATH for RSA keys). ' +
+        'Copy .env.example to .env and configure your secrets.',
+      );
     }
     return { key: secret };
   }
@@ -44,7 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(payload: any) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { circleMembership: true },
+      include: { circleMemberships: { include: { group: true } } },
     });
 
     if (!user) {
@@ -54,12 +53,19 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       });
     }
 
+    const circles = user.circleMemberships.map((m) => ({
+      id: m.group.id,
+      name: m.group.name,
+      role: m.role,
+    }));
+
     return {
       id: user.id,
       email: user.email,
       givenName: user.givenName,
-      circleId: user.circleMembership?.groupId || null,
-      role: user.circleMembership?.role || null,
+      circleId: circles.length > 0 ? circles[0].id : null,
+      role: circles.length > 0 ? circles[0].role : null,
+      circles,
     };
   }
 }

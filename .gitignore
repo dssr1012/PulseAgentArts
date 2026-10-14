@@ -57,6 +57,9 @@ backend/keys/*.pem
 # Prisma (local migration working dir — see note below)
 backend/prisma/migrations/
 
+# WhatsApp (Baileys session/auth artifacts — runtime only, never commit)
+backend/whatsapp-auth/
+
 # Docker
 pgdata/
 redisdata/
@@ -74,3 +77,16 @@ ios/build/
 
 # CodeArts internal
 .arts/
+
+# Accidental nested copies inside web/ (never commit these)
+web/backend/
+web/web/
+web/mcp-server/
+web/mobile/
+web/.github/
+web/.gitignore
+web/.npmrc
+web/.merkle-snapshot.json
+web/pnpm-workspace.yaml
+web/docker-compose.yml
+web/docker-compose.prod.yml

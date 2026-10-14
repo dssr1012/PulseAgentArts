@@ -65,6 +65,7 @@ export class UserResponseDto {
   authProvider: string;
   circleId: string | null;
   role: string | null;
+  circles: { id: string; name: string; role: string }[];
   mustChangePassword: boolean;
 }
 

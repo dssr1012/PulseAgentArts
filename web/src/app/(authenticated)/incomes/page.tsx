@@ -13,7 +13,7 @@ import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { Plus, ArrowUpRight, Edit2, Trash2 } from 'lucide-react';
 
 export default function IncomesPage() {
-  const { user } = useAuth();
+  const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
 
   const [incomes, setIncomes] = useState<Transaction[]>([]);
@@ -22,12 +22,12 @@ export default function IncomesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!user?.circle_id) { setIsLoading(false); return; }
+    if (!activeCircleId) { setIsLoading(false); return; }
     setIsLoading(true);
     try {
       const [incomesData, categoriesData] = await Promise.all([
         apiClient.getIncomes({ limit: 50 }),
-        apiClient.getCategories(user.circle_id),
+        apiClient.getCategories(activeCircleId),
       ]);
       setIncomes(incomesData.data || []);
       setCategories(categoriesData);
@@ -36,18 +36,18 @@ export default function IncomesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.circle_id, addToast]);
+  }, [activeCircleId, addToast]);
 
   useEffect(() => {
     let cancelled = false;
 
     const doFetch = async () => {
-      if (!user?.circle_id) { if (!cancelled) setIsLoading(false); return; }
+      if (!activeCircleId) { if (!cancelled) setIsLoading(false); return; }
       if (!cancelled) setIsLoading(true);
       try {
         const [incomesData, categoriesData] = await Promise.all([
           apiClient.getIncomes({ limit: 50 }),
-          apiClient.getCategories(user.circle_id),
+          apiClient.getCategories(activeCircleId),
         ]);
         if (!cancelled) {
           setIncomes(incomesData.data || []);
@@ -62,7 +62,7 @@ export default function IncomesPage() {
 
     doFetch();
     return () => { cancelled = true; };
-  }, [user?.circle_id, addToast]);
+  }, [activeCircleId, addToast]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this income record?')) return;

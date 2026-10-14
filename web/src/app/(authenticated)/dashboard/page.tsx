@@ -14,7 +14,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
 
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
@@ -26,17 +26,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.circle_id) {
+      if (!activeCircleId) {
         setIsLoading(false);
         return;
       }
 
       try {
         const [balanceData, expensesData, incomesData, categoriesData, anomalyData] = await Promise.allSettled([
-          apiClient.getBalance(user.circle_id, showConsolidated),
+          apiClient.getBalance(activeCircleId, showConsolidated),
           apiClient.getExpenses({ limit: 10, page: 1 }),
           apiClient.getIncomes({ limit: 10, page: 1 }),
-          apiClient.getCategories(user.circle_id),
+          apiClient.getCategories(activeCircleId),
           apiClient.getIrregularExpenses({ limit: 1, page: 1 }),
         ]);
 
@@ -60,13 +60,13 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [user?.circle_id, showConsolidated, addToast]);
+  }, [activeCircleId, showConsolidated, addToast]);
 
   const handleRefresh = async () => {
-    if (!user?.circle_id) return;
+    if (!activeCircleId) return;
     setIsLoading(true);
     try {
-      const balanceData = await apiClient.getBalance(user.circle_id, showConsolidated);
+      const balanceData = await apiClient.getBalance(activeCircleId, showConsolidated);
       setBalance(balanceData);
       addToast('success', 'Dashboard refreshed.');
     } catch {

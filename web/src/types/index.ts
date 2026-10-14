@@ -38,6 +38,7 @@ export interface User {
   auth_provider: AuthProvider;
   circle_id: string | null;
   circle_role: CircleRole | null;
+  circles: { id: string; name: string; role: string }[];
   created_at: string;
   must_change_password: boolean;
 }

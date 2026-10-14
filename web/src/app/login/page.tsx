@@ -2,19 +2,25 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, loginWithGoogle, isLoading, error, clearError } = useAuth();
   const { addToast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const redirectTo = searchParams.get('redirect');
+  const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+    ? redirectTo
+    : null;
 
   // Only show the Google button when SSO is actually configured (build-time var).
   const googleEnabled = !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -31,7 +37,11 @@ export default function LoginPage() {
     try {
       const user = await login(email, password);
       addToast('success', 'Welcome back!');
-      router.push(user.must_change_password ? '/change-password' : '/dashboard');
+      if (user.must_change_password) {
+        router.push('/change-password');
+      } else {
+        router.push(safeRedirect || '/dashboard');
+      }
     } catch {
       // Error is handled by auth context
     }
@@ -42,7 +52,7 @@ export default function LoginPage() {
     try {
       await loginWithGoogle();
       addToast('success', 'Welcome back!');
-      router.push('/dashboard');
+      router.push(safeRedirect || '/dashboard');
     } catch {
       addToast('error', 'Google sign-in failed. Please try again.');
     }
