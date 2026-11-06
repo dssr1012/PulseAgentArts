@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
-import type { CreditCard, StatementPreview, CardType } from '@/types';
+import type { CreditCard, StatementPreview, CardType, CardMode } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { LoadingOverlay } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/Tabs';
@@ -39,7 +39,9 @@ export default function CardsPage() {
   // Add card form state
   const [bankName, setBankName] = useState('');
   const [cardType, setCardType] = useState<CardType>('Visa');
+  const [cardMode, setCardMode] = useState<CardMode>('debit');
   const [lastFourDigits, setLastFourDigits] = useState('');
+  const [tag, setTag] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchCards = useCallback(async () => {
@@ -64,11 +66,13 @@ export default function CardsPage() {
     }
     setIsCreating(true);
     try {
-      await apiClient.createCard({ bank_name: bankName, card_type: cardType, last_4_digits: lastFourDigits });
+      await apiClient.createCard({ bank_name: bankName, card_type: cardType, card_mode: cardMode, last_4_digits: lastFourDigits, tag: tag || undefined });
       addToast('success', 'Card registered successfully.');
       setShowAddModal(false);
       setBankName('');
       setLastFourDigits('');
+      setTag('');
+      setCardMode('debit');
       fetchCards();
     } catch (err: unknown) {
       const error = err as { code?: string };
@@ -163,6 +167,11 @@ export default function CardsPage() {
               </div>
               <p className="text-sm font-semibold text-gray-900">{card.bank_name}</p>
               <p className="text-lg font-mono text-gray-600 mt-1">•••• •••• •••• {card.last_four_digits}</p>
+              {card.tag && (
+                <span className="inline-block text-xs font-medium text-pulse-blue-700 bg-pulse-blue-50 px-2 py-1 rounded-md mt-1">
+                  {card.tag}
+                </span>
+              )}
               <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                 <button
                   onClick={() => handleUploadClick(card)}
@@ -213,6 +222,18 @@ export default function CardsPage() {
             </select>
           </div>
           <div>
+            <label htmlFor="cardMode" className="label-field">Card Mode</label>
+            <select
+              id="cardMode"
+              value={cardMode}
+              onChange={(e) => setCardMode(e.target.value as CardMode)}
+              className="select-field"
+            >
+              <option value="debit">Debit</option>
+              <option value="credit">Credit</option>
+            </select>
+          </div>
+          <div>
             <label htmlFor="lastFour" className="label-field">Last 4 Digits</label>
             <input
               id="lastFour"
@@ -227,6 +248,21 @@ export default function CardsPage() {
             />
             <p className="text-xs text-gray-500 mt-1">
               Only the last 4 digits. We never store full card numbers.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="cardTag" className="label-field">Tag (optional)</label>
+            <input
+              id="cardTag"
+              type="text"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              className="input-field"
+              placeholder="e.g., Daily purchases, Travel"
+              maxLength={50}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              A label to identify this card when creating expenses.
             </p>
           </div>
           <div className="flex items-center justify-end gap-3 pt-4">

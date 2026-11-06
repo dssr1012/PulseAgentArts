@@ -62,6 +62,16 @@ enum CardType {
   Mastercard
 }
 
+enum PaymentMethod {
+  cash
+  card
+}
+
+enum CardMode {
+  debit
+  credit
+}
+
 enum AlertType {
   amount_discrepancy
   orphaned_duplicate
@@ -212,12 +222,15 @@ model Transaction {
   source             TransactionSource  @default(manual)
   confirmationStatus ConfirmationStatus @default(confirmed) @map("confirmation_status")
   transactionDate    DateTime           @map("transaction_date")
+  paymentMethod      PaymentMethod      @default(cash) @map("payment_method")
+  cardId             String?            @map("card_id")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
 
   group              FamilyGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user               User               @relation(fields: [userId], references: [id], onDelete: SetNull)
   category           Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  card               CreditCard?        @relation(fields: [cardId], references: [id], onDelete: SetNull)
   anomalyAlerts      AnomalyAlert[]
   matchedStatementItems StatementItem[]
 
@@ -225,6 +238,7 @@ model Transaction {
   @@index([userId])
   @@index([groupId, categoryId])
   @@index([isPrivate])
+  @@index([cardId])
   @@map("transactions")
 }
 
@@ -253,12 +267,15 @@ model CreditCard {
   groupId           String   @map("group_id")
   bankName          String   @map("bank_name")
   cardType          CardType @map("card_type")
+  cardMode          CardMode @default(debit) @map("card_mode")
   lastFourDigits    String   @map("last_four_digits") @db.Char(4)
   statementPassword String?  @map("statement_password")
+  tag               String?
   createdAt         DateTime @default(now()) @map("created_at")
 
   group          FamilyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   statements     CardStatement[]
+  transactions   Transaction[]
 
   @@index([groupId])
   @@map("credit_cards")

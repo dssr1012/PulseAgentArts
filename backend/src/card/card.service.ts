@@ -24,7 +24,9 @@ export class CardService {
         groupId: circleId,
         bankName: dto.bankName,
         cardType: dto.cardType as any,
+        cardMode: dto.cardMode as any,
         lastFourDigits: dto.last4Digits,
+        tag: dto.tag,
       },
     });
   }

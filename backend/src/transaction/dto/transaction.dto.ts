@@ -61,6 +61,16 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsIn(['confirmed', 'pending_confirmation'])
   confirmationStatus?: string;
+
+  @ApiPropertyOptional({ enum: ['cash', 'card'], default: 'cash' })
+  @IsOptional()
+  @IsIn(['cash', 'card'])
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({ description: 'Required when paymentMethod is card. Must be a card in your circle.' })
+  @IsOptional()
+  @IsString()
+  cardId?: string;
 }
 
 export class UpdateExpenseDto {
@@ -107,6 +117,16 @@ export class UpdateExpenseDto {
   @IsOptional()
   @IsDateString()
   hiddenUntil?: string;
+
+  @ApiPropertyOptional({ enum: ['cash', 'card'] })
+  @IsOptional()
+  @IsIn(['cash', 'card'])
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({ description: 'Required when paymentMethod is card.' })
+  @IsOptional()
+  @IsString()
+  cardId?: string;
 }
 
 export class CreateIncomeDto {
@@ -134,6 +154,16 @@ export class CreateIncomeDto {
   @ApiProperty({ example: '2024-01-15' })
   @IsDateString()
   incomeDate: string;
+
+  @ApiPropertyOptional({ enum: ['cash', 'card'], default: 'cash' })
+  @IsOptional()
+  @IsIn(['cash', 'card'])
+  paymentMethod?: string;
+
+  @ApiPropertyOptional({ description: 'Required when paymentMethod is card.' })
+  @IsOptional()
+  @IsString()
+  cardId?: string;
 }
 
 export class ExpenseQueryDto {

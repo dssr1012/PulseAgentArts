@@ -164,7 +164,9 @@ class ApiClient {
     if (typeof obj === 'object') {
       const result: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-        const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+        const snakeKey = /^[A-Z]+$/.test(key)
+          ? key
+          : key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
         result[snakeKey] = this.camelToSnake(value);
       }
       return result;
@@ -321,6 +323,22 @@ class ApiClient {
       if (c.name && !flat.category_name) flat.category_name = c.name;
       if (c.group_id && !flat.group_id) flat.group_id = c.group_id;
     }
+    if (item.paymentMethod !== undefined && !flat.payment_method) {
+      flat.payment_method = item.paymentMethod;
+    }
+    if (item.cardId !== undefined && !flat.card_id) {
+      flat.card_id = item.cardId;
+    }
+    if (item.card && typeof item.card === 'object') {
+      const c = item.card as Record<string, unknown>;
+      flat.card = {
+        id: c.id,
+        bank_name: c.bankName,
+        last_four_digits: c.lastFourDigits,
+        tag: c.tag ?? null,
+        card_mode: c.cardMode ?? 'debit',
+      };
+    }
     return flat;
   }
 
@@ -405,10 +423,10 @@ class ApiClient {
 
   async getCards() {
     const response = await this.client.get('/cards');
-    return response.data;
+    return response.data?.data ?? [];
   }
 
-  async createCard(data: { bank_name: string; card_type: string; last_4_digits: string }) {
+  async createCard(data: { bank_name: string; card_type: string; card_mode: string; last_4_digits: string; tag?: string }) {
     const response = await this.client.post('/cards', data);
     return response.data;
   }

@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn, CURRENCIES } from '@/lib/utils';
-import type { Transaction, Category, Currency, TransactionType } from '@/types';
-import { Loader2, Lock, Unlock, Calendar } from 'lucide-react';
+import type { Transaction, Category, Currency, TransactionType, CreditCard, PaymentMethod } from '@/types';
+import { Loader2, Lock, Unlock, Calendar, Wallet, CreditCard as CreditCardIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TransactionFormProps {
@@ -34,6 +34,13 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
     transaction?.hidden_until ? format(new Date(transaction.hidden_until), 'yyyy-MM-dd') : ''
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(transaction?.payment_method || 'cash');
+  const [cardId, setCardId] = useState(transaction?.card_id || '');
+  const [cards, setCards] = useState<CreditCard[]>([]);
+
+  useEffect(() => {
+    apiClient.getCards().then(setCards).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +60,12 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
         return;
       }
 
+      if (paymentMethod === 'card' && !cardId) {
+        addToast('warning', 'Please select a card.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const baseData = {
         amount: parsedAmount,
         currency,
@@ -61,6 +74,8 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
         merchant_name: merchantName || undefined,
         is_private: isPrivate,
         hidden_until: isPrivate && hiddenUntil ? new Date(hiddenUntil).toISOString() : undefined,
+        payment_method: paymentMethod,
+        card_id: paymentMethod === 'card' ? cardId : undefined,
       };
 
       if (transaction) {
@@ -82,6 +97,8 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           category_id: categoryId || undefined,
           description: description || undefined,
           income_date: new Date(transactionDate).toISOString(),
+          payment_method: paymentMethod,
+          card_id: paymentMethod === 'card' ? cardId : undefined,
         });
         addToast('success', 'Income added successfully.');
       }
@@ -191,6 +208,67 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           disabled={isSubmitting}
         />
       </div>
+
+      {/* Payment Method */}
+      <div className="space-y-3">
+          <div>
+            <label className="label-field">Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={cn(
+                  'flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-colors',
+                  paymentMethod === 'cash'
+                    ? 'border-pulse-blue-500 bg-pulse-blue-50 text-pulse-blue-700'
+                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                )}
+              >
+                <Wallet className="h-4 w-4" />
+                <span className="text-sm font-medium">Cash</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('card')}
+                className={cn(
+                  'flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-colors',
+                  paymentMethod === 'card'
+                    ? 'border-pulse-blue-500 bg-pulse-blue-50 text-pulse-blue-700'
+                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                )}
+              >
+                <CreditCardIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Card</span>
+              </button>
+            </div>
+          </div>
+          {paymentMethod === 'card' && (
+            <div>
+              <label htmlFor="card" className="label-field">Card</label>
+              {cards.length === 0 ? (
+                <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                  No cards registered. Add a card first on the Cards page.
+                </p>
+              ) : (
+                <select
+                  id="card"
+                  value={cardId}
+                  onChange={(e) => setCardId(e.target.value)}
+                  className="select-field"
+                  required
+                  disabled={isSubmitting}
+                >
+                  <option value="">Select a card</option>
+                  {cards.map((card) => (
+                    <option key={card.id} value={card.id}>
+                      {card.bank_name} •••• {card.last_four_digits} ({card.card_mode}){card.tag ? ` ${card.tag}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+        </div>
 
       {/* Date */}
       <div>

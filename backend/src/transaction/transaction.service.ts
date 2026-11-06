@@ -52,6 +52,25 @@ export class TransactionService {
       });
     }
 
+    // Validate card if payment method is card
+    if (dto.paymentMethod === 'card') {
+      if (!dto.cardId) {
+        throw new BadRequestException({
+          errorCode: 'TX_CARD_REQUIRED',
+          message: 'cardId is required when paymentMethod is card',
+        });
+      }
+      const card = await this.prisma.creditCard.findFirst({
+        where: { id: dto.cardId, groupId: circleId },
+      });
+      if (!card) {
+        throw new BadRequestException({
+          errorCode: 'TX_INVALID_CARD',
+          message: 'Card not found in your circle',
+        });
+      }
+    }
+
     const transaction = await this.prisma.transaction.create({
       data: {
         groupId: circleId,
@@ -67,9 +86,12 @@ export class TransactionService {
         source: (dto.source as any) || 'manual',
         confirmationStatus: (dto.confirmationStatus as any) || 'confirmed',
         transactionDate: new Date(dto.transactionDate),
+        paymentMethod: (dto.paymentMethod as any) || 'cash',
+        cardId: dto.paymentMethod === 'card' ? dto.cardId : null,
       },
       include: {
         category: true,
+        card: true,
         user: { select: { id: true, givenName: true } },
       },
     });
@@ -85,6 +107,25 @@ export class TransactionService {
       });
     }
 
+    // Validate card if payment method is card
+    if (dto.paymentMethod === 'card') {
+      if (!dto.cardId) {
+        throw new BadRequestException({
+          errorCode: 'TX_CARD_REQUIRED',
+          message: 'cardId is required when paymentMethod is card',
+        });
+      }
+      const card = await this.prisma.creditCard.findFirst({
+        where: { id: dto.cardId, groupId: circleId },
+      });
+      if (!card) {
+        throw new BadRequestException({
+          errorCode: 'TX_INVALID_CARD',
+          message: 'Card not found in your circle',
+        });
+      }
+    }
+
     const transaction = await this.prisma.transaction.create({
       data: {
         groupId: circleId,
@@ -97,9 +138,12 @@ export class TransactionService {
         source: 'manual',
         confirmationStatus: 'confirmed',
         transactionDate: new Date(dto.incomeDate),
+        paymentMethod: (dto.paymentMethod as any) || 'cash',
+        cardId: dto.paymentMethod === 'card' ? dto.cardId : null,
       },
       include: {
         category: true,
+        card: true,
         user: { select: { id: true, givenName: true } },
       },
     });
@@ -138,6 +182,7 @@ export class TransactionService {
         orderBy: { transactionDate: 'desc' },
         include: {
           category: true,
+        card: true,
           user: { select: { id: true, givenName: true } },
         },
       }),
@@ -187,6 +232,7 @@ export class TransactionService {
         orderBy: { transactionDate: 'desc' },
         include: {
           category: true,
+        card: true,
           user: { select: { id: true, givenName: true } },
         },
       }),
@@ -228,6 +274,25 @@ export class TransactionService {
       });
     }
 
+    // Validate card if payment method is card
+    if (dto.paymentMethod === 'card') {
+      if (!dto.cardId) {
+        throw new BadRequestException({
+          errorCode: 'TX_CARD_REQUIRED',
+          message: 'cardId is required when paymentMethod is card',
+        });
+      }
+      const card = await this.prisma.creditCard.findFirst({
+        where: { id: dto.cardId, groupId: circleId },
+      });
+      if (!card) {
+        throw new BadRequestException({
+          errorCode: 'TX_INVALID_CARD',
+          message: 'Card not found in your circle',
+        });
+      }
+    }
+
     const updateData: any = {};
     if (dto.amount !== undefined) updateData.amount = dto.amount;
     if (dto.currency) updateData.currency = dto.currency;
@@ -237,12 +302,17 @@ export class TransactionService {
     if (dto.transactionDate) updateData.transactionDate = new Date(dto.transactionDate);
     if (dto.isPrivate !== undefined) updateData.isPrivate = dto.isPrivate;
     if (dto.hiddenUntil !== undefined) updateData.hiddenUntil = dto.hiddenUntil ? new Date(dto.hiddenUntil) : null;
+    if (dto.paymentMethod !== undefined) {
+      updateData.paymentMethod = dto.paymentMethod;
+      updateData.cardId = dto.paymentMethod === 'card' ? dto.cardId : null;
+    }
 
     const updated = await this.prisma.transaction.update({
       where: { id: expenseId },
       data: updateData,
       include: {
         category: true,
+        card: true,
         user: { select: { id: true, givenName: true } },
       },
     });
@@ -389,6 +459,7 @@ export class TransactionService {
       orderBy: { createdAt: 'desc' },
       include: {
         category: true,
+        card: true,
         user: { select: { id: true, givenName: true } },
       },
     });
@@ -442,6 +513,16 @@ export class TransactionService {
       source: tx.source,
       confirmationStatus: tx.confirmationStatus,
       transactionDate: tx.transactionDate?.toISOString(),
+      paymentMethod: tx.paymentMethod,
+      cardId: tx.cardId,
+      card: tx.card
+        ? {
+            id: tx.card.id,
+            bankName: tx.card.bankName,
+            lastFourDigits: tx.card.lastFourDigits,
+            tag: tx.card.tag,
+          }
+        : null,
       createdAt: tx.createdAt?.toISOString(),
       user: tx.user,
     };

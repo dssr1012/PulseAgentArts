@@ -1,3 +1,4 @@
+import * as dotenv from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -10,6 +11,11 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { PinoLoggerService } from './common/logger/logger.service';
 import { logger } from './common/logger/logger';
 import { correlationMiddleware } from './common/middleware/correlation.middleware';
+import { decryptEnv } from './common/decrypt-env';
+
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '../.env' });
+decryptEnv();
 
 process.on('uncaughtException', (err: Error) => {
   logger.fatal({ err, event: 'uncaughtException' }, err.message);

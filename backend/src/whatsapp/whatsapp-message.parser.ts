@@ -4,6 +4,8 @@ export interface ParsedExpenseMessage {
   amount: number;
   description: string;
   currency: 'ARS' | 'USD' | 'EUR';
+  paymentMethod: 'cash' | 'card';
+  cardIdentifier?: string;
 }
 
 @Injectable()
@@ -26,8 +28,12 @@ export class WhatsappMessageParser {
 
     const description = this.extractDescription(text.trim(), amount);
     const currency = this.extractCurrency(normalized);
+    const paymentMethod = this.extractPaymentMethod(normalized);
+    const cardIdentifier = paymentMethod === 'card'
+      ? this.extractCardIdentifier(normalized, amount)
+      : undefined;
 
-    return { amount, description, currency };
+    return { amount, description, currency, paymentMethod, cardIdentifier };
   }
 
   suggestCategory(text: string): string | null {
@@ -93,6 +99,12 @@ export class WhatsappMessageParser {
     desc = desc.replace(/\s+(pesos|ars|usd|dolares|dólares|euros|eur|u\$s)$/i, '');
     desc = desc.replace(/\s+(pesos|ars|usd|dolares|dólares|euros|eur|u\$s)\s+/i, ' ');
     desc = desc.replace(/^(pesos|ars|usd|dolares|dólares|euros|eur|u\$s)\s+/i, '');
+    desc = desc.replace(/\b(con\s+)?(tarjeta|tc|credito|crédito|debito|débito|card|credit|debit|efectivo|cash|contado|dinero)\b/gi, '');
+    desc = desc.replace(/\b(tag|etiqueta)\s*[:\s]\s*.+/gi, '');
+    desc = desc.replace(/\s+\b\d{4}\b(?!\s*(pesos|ars|usd|dolares|dólares|euros|eur))/g, (match) => {
+      const digits = match.trim();
+      return digits !== amount.toString() ? '' : match;
+    });
     desc = desc.trim();
 
     if (!desc) desc = 'Gasto WhatsApp';
@@ -103,5 +115,31 @@ export class WhatsappMessageParser {
     if (/\b(usd|dolares|dólares|\$us|u\$s)\b/.test(text)) return 'USD';
     if (/\b(eur|euros|€)\b/.test(text)) return 'EUR';
     return 'ARS';
+  }
+
+  private extractPaymentMethod(text: string): 'cash' | 'card' {
+    if (/\b(tarjeta|tc|credito|crédito|debito|débito|card|credit|debit|visa|mastercard|amex)\b/.test(text)) {
+      return 'card';
+    }
+    if (/\b(efectivo|cash|contado|dinero)\b/.test(text)) {
+      return 'cash';
+    }
+    return 'cash';
+  }
+
+  private extractCardIdentifier(text: string, amount: number): string | undefined {
+    const amountStr = amount.toString();
+    const fourDigitMatches = text.match(/\b(\d{4})\b/g) || [];
+    const nonAmountDigits = fourDigitMatches.filter((d) => d !== amountStr);
+    if (nonAmountDigits.length > 0) {
+      return nonAmountDigits[0];
+    }
+
+    const tagMatch = text.match(/\b(?:tag|etiqueta)\s*[:\s]\s*(.+)/);
+    if (tagMatch) {
+      return tagMatch[1].trim();
+    }
+
+    return undefined;
   }
 }

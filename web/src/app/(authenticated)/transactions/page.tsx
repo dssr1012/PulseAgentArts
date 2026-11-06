@@ -23,6 +23,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Wallet,
+  CreditCard as CreditCardIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -211,6 +213,7 @@ export default function TransactionsPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Currency</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -232,6 +235,22 @@ export default function TransactionsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{t.category_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {t.payment_method === 'card' && t.card ? (
+                        <span className="inline-flex items-center gap-1">
+                          <CreditCardIcon className="h-3.5 w-3.5 text-gray-400" />
+                          <span className={t.card.card_mode === 'credit' ? 'text-amber-600 font-medium' : 'text-blue-600 font-medium'}>
+                            {t.card.card_mode === 'credit' ? 'Credit' : 'Debit'}
+                          </span>
+                          {t.card.bank_name} •••• {t.card.last_four_digits}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Wallet className="h-3.5 w-3.5 text-gray-400" />
+                          Cash
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{t.currency}</td>
                     <td className={`px-4 py-3 text-sm font-semibold text-right ${t.type === 'expense' ? 'text-pulse-red-500' : 'text-pulse-emerald-500'}`}>
                       {t.type === 'expense' ? '-' : '+'}{formatCurrency(t.amount, t.currency)}
@@ -275,7 +294,7 @@ export default function TransactionsPage() {
                           <span className="flex items-center gap-1"><Lock className="h-3.5 w-3.5 text-pulse-red-500" /> Gasto Privado</span>
                         ) : t.description || t.merchant_name || '-'}
                       </p>
-                      <p className="text-xs text-gray-500">{t.category_name} • {formatDate(t.transaction_date)}</p>
+                      <p className="text-xs text-gray-500">{t.category_name} • {formatDate(t.transaction_date)} • {t.payment_method === 'card' && t.card ? `${t.card.card_mode === 'credit' ? 'Credit' : 'Debit'} ${t.card.bank_name} •••• ${t.card.last_four_digits}` : 'Cash'}</p>
                     </div>
                   </div>
                   <p className={cn('text-sm font-semibold', t.type === 'expense' ? 'text-pulse-red-500' : 'text-pulse-emerald-500')}>

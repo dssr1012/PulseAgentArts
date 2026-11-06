@@ -213,6 +213,35 @@ export class WhatsappService implements OnModuleDestroy {
           ? ''
           : (msg.pushName ? `${msg.pushName}: ` : '');
 
+        let paymentMethod: 'cash' | 'card' = parsed.paymentMethod;
+        let cardId: string | undefined;
+
+        if (parsed.paymentMethod === 'card') {
+          if (parsed.cardIdentifier) {
+            const isFourDigits = /^\d{4}$/.test(parsed.cardIdentifier);
+            const card = await this.prisma.creditCard.findFirst({
+              where: isFourDigits
+                ? { groupId: circleId, lastFourDigits: parsed.cardIdentifier }
+                : { groupId: circleId, tag: { equals: parsed.cardIdentifier, mode: 'insensitive' as any } },
+            });
+            if (card) {
+              cardId = card.id;
+            } else {
+              paymentMethod = 'cash';
+            }
+          } else {
+            const userCards = await this.prisma.creditCard.findMany({
+              where: { groupId: circleId },
+              select: { id: true },
+            });
+            if (userCards.length === 1) {
+              cardId = userCards[0].id;
+            } else {
+              paymentMethod = 'cash';
+            }
+          }
+        }
+
         const created = await this.transactionService.createExpense(userId, circleId, {
           amount: parsed.amount,
           currency: parsed.currency,
@@ -221,12 +250,15 @@ export class WhatsappService implements OnModuleDestroy {
           source: 'whatsapp' as any,
           confirmationStatus: 'pending_confirmation',
           transactionDate: new Date().toISOString(),
+          paymentMethod,
+          cardId,
         });
 
+        const paymentLabel = paymentMethod === 'card' && cardId ? ' (tarjeta)' : ' (efectivo)';
         await this.sendReply(
           userId,
           msg.key.remoteJid,
-          `Gasto cargado: $${parsed.amount} en "${parsed.description}" (pendiente de confirmación)`,
+          `Gasto cargado: $${parsed.amount} en "${parsed.description}"${paymentLabel} (pendiente de confirmación)`,
         );
         this.logger.log(`Expense created via WhatsApp for user ${userId}: ${created.id}`);
       } catch (err) {

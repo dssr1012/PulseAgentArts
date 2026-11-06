@@ -25,7 +25,7 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD-redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -81,6 +81,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    environment:
+      BACKEND_URL: http://backend:3000
     ports:
       - "3001:3001"
     logging:

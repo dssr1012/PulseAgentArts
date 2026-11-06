@@ -13,6 +13,9 @@ export type TransactionSource = 'manual' | 'statement' | 'notification_capture' 
 export type ConfirmationStatus = 'confirmed' | 'pending_confirmation';
 
 export type CardType = 'Visa' | 'Mastercard';
+export type CardMode = 'debit' | 'credit';
+
+export type PaymentMethod = 'cash' | 'card';
 
 export type CircleRole = 'admin' | 'member';
 
@@ -152,6 +155,9 @@ export interface Transaction {
   source: TransactionSource;
   confirmation_status: ConfirmationStatus;
   transaction_date: string;
+  payment_method: PaymentMethod;
+  card_id: string | null;
+  card: { id: string; bank_name: string; last_four_digits: string; tag: string | null; card_mode: CardMode } | null;
   created_at: string;
 }
 
@@ -216,14 +222,18 @@ export interface CreditCard {
   group_id: string;
   bank_name: string;
   card_type: CardType;
+  card_mode: CardMode;
   last_four_digits: string;
+  tag: string | null;
   created_at: string;
 }
 
 export interface CreateCardRequest {
   bank_name: string;
   card_type: CardType;
+  card_mode: CardMode;
   last_4_digits: string;
+  tag?: string;
 }
 
 // ============ Statement Types ============
