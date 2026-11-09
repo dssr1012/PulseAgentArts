@@ -536,6 +536,7 @@ export class TransactionService {
             id: tx.card.id,
             bankName: tx.card.bankName,
             lastFourDigits: tx.card.lastFourDigits,
+            cardMode: tx.card.cardMode,
             tag: tx.card.tag,
           }
         : null,

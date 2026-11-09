@@ -323,20 +323,20 @@ class ApiClient {
       if (c.name && !flat.category_name) flat.category_name = c.name;
       if (c.group_id && !flat.group_id) flat.group_id = c.group_id;
     }
-    if (item.paymentMethod !== undefined && !flat.payment_method) {
-      flat.payment_method = item.paymentMethod;
+    if (item.payment_method !== undefined && !flat.payment_method) {
+      flat.payment_method = item.payment_method;
     }
-    if (item.cardId !== undefined && !flat.card_id) {
-      flat.card_id = item.cardId;
+    if (item.card_id !== undefined && !flat.card_id) {
+      flat.card_id = item.card_id;
     }
     if (item.card && typeof item.card === 'object') {
       const c = item.card as Record<string, unknown>;
       flat.card = {
         id: c.id,
-        bank_name: c.bankName,
-        last_four_digits: c.lastFourDigits,
+        bank_name: c.bank_name,
+        last_four_digits: c.last_four_digits,
         tag: c.tag ?? null,
-        card_mode: c.cardMode ?? 'debit',
+        card_mode: c.card_mode ?? 'debit',
       };
     }
     return flat;
