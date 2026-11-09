@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
@@ -15,6 +16,7 @@ import { Plus, ArrowUpRight, Edit2, Trash2 } from 'lucide-react';
 export default function IncomesPage() {
   const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
 
   const [incomes, setIncomes] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -31,12 +33,17 @@ export default function IncomesPage() {
       ]);
       setIncomes(incomesData.data || []);
       setCategories(categoriesData);
-    } catch {
-      addToast('error', 'Failed to load incomes.');
+    } catch (err: unknown) {
+      const error = err as { code?: string };
+      if (error.code === 'CIRCLE_NOT_FOUND') {
+        router.replace('/circle');
+      } else {
+        addToast('error', 'Failed to load incomes.');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, addToast]);
+  }, [activeCircleId, addToast, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,8 +60,13 @@ export default function IncomesPage() {
           setIncomes(incomesData.data || []);
           setCategories(categoriesData);
         }
-      } catch {
-        if (!cancelled) addToast('error', 'Failed to load incomes.');
+      } catch (err: unknown) {
+        const error = err as { code?: string };
+        if (error.code === 'CIRCLE_NOT_FOUND') {
+          if (!cancelled) router.replace('/circle');
+        } else if (!cancelled) {
+          addToast('error', 'Failed to load incomes.');
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

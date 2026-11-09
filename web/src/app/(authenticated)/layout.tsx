@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoadingPage } from '@/components/ui/Spinner';
@@ -13,6 +13,7 @@ export default function DashboardLayout({
 }) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -25,6 +26,12 @@ export default function DashboardLayout({
       router.push('/change-password');
     }
   }, [isLoading, isAuthenticated, user?.must_change_password, router]);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user && user.circles.length === 0 && pathname !== '/circle') {
+      router.replace('/circle');
+    }
+  }, [isLoading, isAuthenticated, user?.circles.length, pathname, router]);
 
   if (isLoading) {
     return <LoadingPage />;

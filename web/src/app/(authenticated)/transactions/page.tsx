@@ -27,12 +27,13 @@ import {
   CreditCard as CreditCardIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function TransactionsPage() {
   const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -80,12 +81,17 @@ export default function TransactionsPage() {
       setTotal(combined.length);
       setTotalPages(Math.max(1, Math.ceil(combined.length / LIMIT)));
       setCategories(categoriesData);
-    } catch {
-      addToast('error', 'Failed to load transactions.');
+    } catch (err: unknown) {
+      const error = err as { code?: string };
+      if (error.code === 'CIRCLE_NOT_FOUND') {
+        router.replace('/circle');
+      } else {
+        addToast('error', 'Failed to load transactions.');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, filters, addToast]);
+  }, [activeCircleId, filters, addToast, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,8 +115,13 @@ export default function TransactionsPage() {
         setTotal(combined.length);
         setTotalPages(Math.max(1, Math.ceil(combined.length / LIMIT)));
         setCategories(categoriesData);
-      } catch {
-        if (!cancelled) addToast('error', 'Failed to load transactions.');
+      } catch (err: unknown) {
+        const error = err as { code?: string };
+        if (error.code === 'CIRCLE_NOT_FOUND') {
+          if (!cancelled) router.replace('/circle');
+        } else if (!cancelled) {
+          addToast('error', 'Failed to load transactions.');
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

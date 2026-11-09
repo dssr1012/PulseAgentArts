@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
@@ -25,6 +26,7 @@ import {
 export default function CardsPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
 
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,12 +51,18 @@ export default function CardsPage() {
     try {
       const data = await apiClient.getCards();
       setCards(data);
-    } catch {
-      addToast('error', 'Failed to load cards.');
+    } catch (err: unknown) {
+      const error = err as { code?: string };
+      if (error.code === 'CIRCLE_NOT_FOUND') {
+        router.replace('/circle');
+      } else {
+        addToast('error', 'Failed to load cards.');
+      }
+      setCards([]);
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, router]);
 
   useEffect(() => { fetchCards(); }, [fetchCards]);
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
@@ -23,6 +24,7 @@ import {
 export default function AnomaliesPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
 
   const [alerts, setAlerts] = useState<AnomalyAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,12 +44,17 @@ export default function AnomaliesPage() {
       setAlerts(data.data || []);
       setTotalPages(data.total_pages || 1);
       setTotal(data.total || 0);
-    } catch {
-      addToast('error', 'Failed to load anomaly alerts.');
+    } catch (err: unknown) {
+      const error = err as { code?: string };
+      if (error.code === 'CIRCLE_NOT_FOUND') {
+        router.replace('/circle');
+      } else {
+        addToast('error', 'Failed to load anomaly alerts.');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [page, severityFilter, addToast]);
+  }, [page, severityFilter, addToast, router]);
 
   useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
