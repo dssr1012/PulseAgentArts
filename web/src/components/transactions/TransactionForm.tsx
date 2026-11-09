@@ -66,6 +66,13 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
         return;
       }
 
+      const today = format(new Date(), 'yyyy-MM-dd');
+      if (transactionDate > today) {
+        addToast('warning', 'Date cannot be in the future.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const baseData = {
         amount: parsedAmount,
         currency,
@@ -284,6 +291,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
             className="input-field"
             required
             disabled={isSubmitting}
+            max={format(new Date(), 'yyyy-MM-dd')}
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         </div>

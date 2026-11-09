@@ -52,6 +52,14 @@ export class TransactionService {
       });
     }
 
+    // Validate transaction date is not in the future
+    if (new Date(dto.transactionDate) > new Date()) {
+      throw new BadRequestException({
+        errorCode: 'TX_FUTURE_DATE_NOT_ALLOWED',
+        message: 'Transaction date cannot be in the future',
+      });
+    }
+
     // Validate card if payment method is card
     if (dto.paymentMethod === 'card') {
       if (!dto.cardId) {
@@ -104,6 +112,14 @@ export class TransactionService {
       throw new BadRequestException({
         errorCode: 'TX_CATEGORY_REQUIRED',
         message: 'categoryId is required for income transactions',
+      });
+    }
+
+    // Validate income date is not in the future
+    if (new Date(dto.incomeDate) > new Date()) {
+      throw new BadRequestException({
+        errorCode: 'TX_FUTURE_DATE_NOT_ALLOWED',
+        message: 'Income date cannot be in the future',
       });
     }
 
