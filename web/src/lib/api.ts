@@ -423,7 +423,7 @@ class ApiClient {
 
   async getCards() {
     const response = await this.client.get('/cards');
-    return response.data?.data ?? [];
+    return response.data ?? [];
   }
 
   async createCard(data: { bank_name: string; card_type: string; card_mode: string; last_4_digits: string; tag?: string }) {
