@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
 import { TransactionService } from '../transaction/transaction.service';
@@ -17,7 +17,7 @@ interface WhatsappSession {
 }
 
 @Injectable()
-export class WhatsappService implements OnModuleDestroy {
+export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly sessions = new Map<string, WhatsappSession>();
   private readonly authDir: string;
@@ -31,6 +31,22 @@ export class WhatsappService implements OnModuleDestroy {
     this.authDir = this.config.get<string>('WHATSAPP_AUTH_DIR', './whatsapp-auth');
     if (!fs.existsSync(this.authDir)) {
       fs.mkdirSync(this.authDir, { recursive: true });
+    }
+  }
+
+  async onModuleInit(): Promise<void> {
+    try {
+      const entries = fs.readdirSync(this.authDir, { withFileTypes: true });
+      const userDirs = entries.filter(e => e.isDirectory() && fs.existsSync(path.join(this.authDir, e.name, 'creds.json')));
+      if (userDirs.length === 0) return;
+      this.logger.log(`Restoring ${userDirs.length} WhatsApp session(s)...`);
+      for (const dir of userDirs) {
+        this.startSession(dir.name).catch(err => {
+          this.logger.error(`Failed to restore session for ${dir.name}: ${err.message}`);
+        });
+      }
+    } catch (err) {
+      this.logger.error(`Failed to scan WhatsApp auth directory: ${err.message}`);
     }
   }
 
