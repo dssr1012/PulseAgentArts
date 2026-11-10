@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -45,6 +46,13 @@ export class StatementService {
       });
     }
 
+    if (!file) {
+      throw new BadRequestException({
+        errorCode: 'STMT_NO_FILE',
+        message: 'No file uploaded',
+      });
+    }
+
     // Validate file format
     const allowedMimes = ['application/pdf', 'text/plain'];
     if (!allowedMimes.includes(file.mimetype)) {
@@ -63,8 +71,9 @@ export class StatementService {
       });
     }
 
+    let tempFilePath: string | null = null;
+
     try {
-      // Parse the statement
       let parsed;
       if (file.mimetype === 'text/plain') {
         const text = file.buffer.toString('utf-8');
@@ -121,6 +130,7 @@ export class StatementService {
       const previewId = crypto.randomUUID();
       const filePath = path.join(tempDir, `${previewId}.pdf`);
       fs.writeFileSync(filePath, file.buffer);
+      tempFilePath = filePath;
 
       // Create statement record
       const statement = await this.prisma.cardStatement.create({
@@ -164,6 +174,9 @@ export class StatementService {
         })),
       };
     } catch (error) {
+      if (tempFilePath) {
+        try { fs.unlinkSync(tempFilePath); } catch { }
+      }
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -189,13 +202,20 @@ export class StatementService {
   ) {
     const statement = await this.prisma.cardStatement.findUnique({
       where: { id: previewId },
-      include: { items: true },
+      include: { card: true, items: true },
     });
 
     if (!statement) {
       throw new NotFoundException({
         errorCode: 'STMT_PREVIEW_NOT_FOUND',
         message: 'Statement preview not found',
+      });
+    }
+
+    if (statement.card.groupId !== circleId) {
+      throw new ForbiddenException({
+        errorCode: 'STMT_PERMISSION_DENIED',
+        message: 'Statement not found',
       });
     }
 

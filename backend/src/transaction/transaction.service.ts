@@ -309,6 +309,18 @@ export class TransactionService {
       }
     }
 
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findFirst({
+        where: { id: dto.categoryId, groupId: circleId },
+      });
+      if (!category) {
+        throw new BadRequestException({
+          errorCode: 'TX_INVALID_CATEGORY',
+          message: 'Category not found in your circle',
+        });
+      }
+    }
+
     const updateData: any = {};
     if (dto.amount !== undefined) updateData.amount = dto.amount;
     if (dto.currency) updateData.currency = dto.currency;

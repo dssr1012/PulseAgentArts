@@ -45,8 +45,10 @@ export class CircleMembershipGuard implements CanActivate {
       activeMembership = memberships.find((m) => m.groupId === targetCircleId);
     }
     if (!activeMembership) {
-      // Fall back to first membership
-      activeMembership = memberships[0];
+      throw new ForbiddenException({
+        errorCode: 'CIRCLE_NOT_FOUND',
+        message: 'You are not a member of any Family Circle',
+      });
     }
 
     // Update request.user with fresh membership data from DB

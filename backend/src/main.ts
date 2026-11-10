@@ -30,6 +30,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.disable('x-powered-by');
 
   const pinoLogger = app.get(PinoLoggerService);
   app.useLogger(pinoLogger);
@@ -44,7 +45,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3001'],
+    origin: process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) || ['http://localhost:3001'],
     credentials: true,
   });
 
