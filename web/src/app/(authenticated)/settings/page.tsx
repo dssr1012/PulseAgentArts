@@ -17,14 +17,22 @@ import {
   XCircle,
   RefreshCw,
   Users,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { addToast } = useToast();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === 'dark';
 
   const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [waQrCode, setWaQrCode] = useState<string | null>(null);
@@ -177,6 +185,35 @@ export default function SettingsPage() {
               <p className="text-xs text-gray-500">Circle Role</p>
               <p className="text-sm font-medium text-gray-900 mt-1 capitalize">{user?.circle_role || 'None'}</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Appearance Section */}
+      <div className="card">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          {isDark ? <Moon className="h-5 w-5 text-pulse-blue-500" /> : <Sun className="h-5 w-5 text-pulse-blue-500" />}
+          Appearance
+        </h2>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Dark Mode</p>
+              <p className="text-xs text-gray-500">Toggle between light and dark theme</p>
+            </div>
+            <button
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                isDark ? 'bg-pulse-blue-500' : 'bg-gray-300'
+              }`}
+              aria-label="Toggle dark mode"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isDark ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
         </div>
       </div>

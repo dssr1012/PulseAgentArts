@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 interface NavItem {
   href: string;
@@ -113,7 +112,6 @@ export function Sidebar() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-pulse-red-50 hover:text-pulse-red-600 transition-colors flex-1"
@@ -200,7 +198,6 @@ export function MobileHeader() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <div className="h-8 w-8 rounded-full bg-pulse-blue-100 flex items-center justify-center">
             <span className="text-pulse-blue-600 font-semibold text-xs">
               {user?.given_name?.charAt(0)?.toUpperCase() || 'U'}
