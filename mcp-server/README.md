@@ -21,8 +21,8 @@ No `auth_token` parameter needed — the server authenticates internally via a d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MCP_TRANSPORT` | `stdio` | Transport mode: `sse` or `stdio` |
-| `MCP_PORT` | `3002` | Port for SSE transport |
-| `MCP_API_BASE_URL` | `http://localhost:3000` | Backend API base URL |
+| `MCP_PORT` | `<port>` | Port for SSE transport |
+| `MCP_API_BASE_URL` | `http://<backend-host>:<port>` | Backend API base URL |
 | `MCP_API_KEY` | — | API key for SSE auth (clients send as Bearer token) |
 | `MCP_USER_EMAIL` | — | MCP service account email for backend login |
 | `MCP_USER_PASSWORD` | — | MCP service account password |
@@ -85,9 +85,9 @@ POST https://your-domain.com/messages?sessionId=<session-id>
 
 | Setting | Value |
 |---------|-------|
-| SSE URL | `http://<host-ip>:8080/mcp/mcp` |
-| Messages URL | `http://<host-ip>:8080/messages` |
-| Health check | `http://<host-ip>:8080/mcp/health` |
+| SSE URL | `http://<host>:<port>/mcp/mcp` |
+| Messages URL | `http://<host>:<port>/messages` |
+| Health check | `http://<host>:<port>/mcp/health` |
 | API Key | `<your-mcp-api-key>` |
 | MCP User | `<your-mcp-user-email>` |
 
@@ -97,12 +97,12 @@ POST https://your-domain.com/messages?sessionId=<session-id>
 docker run -d \
   --name pulse-mcp-dev \
   --network pulseagentarts_dev \
-  -p 3002:3002 \
+  -p <port>:<port> \
   -v pulseagentarts_dev_src:/app:ro \
   -w /app/mcp-server \
   -e MCP_TRANSPORT=sse \
-  -e MCP_PORT=3002 \
-  -e MCP_API_BASE_URL=http://pulse-backend-dev:3000 \
+  -e MCP_PORT=<port> \
+  -e MCP_API_BASE_URL=http://<backend-host>:<port> \
   -e MCP_API_KEY=<your-mcp-api-key> \
   -e MCP_USER_EMAIL=<your-mcp-user-email> \
   -e MCP_USER_PASSWORD=<your-mcp-user-password> \
