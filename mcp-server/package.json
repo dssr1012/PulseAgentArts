@@ -11,12 +11,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "dotenv": "^16.3.1",
-    "jsonwebtoken": "^9.0.2",
+    "express": "^4.21.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "@types/jsonwebtoken": "^9.0.5",
+    "@types/express": "^4.17.21",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.0"
   }
