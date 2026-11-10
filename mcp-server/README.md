@@ -43,8 +43,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
       "env": {
         "MCP_TRANSPORT": "stdio",
         "MCP_API_BASE_URL": "https://your-domain.com",
-        "MCP_USER_EMAIL": "mcp-agent@example.com",
-        "MCP_USER_PASSWORD": "your-password"
+        "MCP_USER_EMAIL": "<your-mcp-user-email>",
+        "MCP_USER_PASSWORD": "<your-mcp-user-password>"
       }
     }
   }
@@ -88,8 +88,8 @@ POST https://your-domain.com/messages?sessionId=<session-id>
 | SSE URL | `http://<host-ip>:8080/mcp/mcp` |
 | Messages URL | `http://<host-ip>:8080/messages` |
 | Health check | `http://<host-ip>:8080/mcp/health` |
-| API Key | `mcp-dev-key-2026` |
-| MCP User | `mcp-agent@example.com` |
+| API Key | `<your-mcp-api-key>` |
+| MCP User | `<your-mcp-user-email>` |
 
 ## Docker
 
@@ -103,9 +103,9 @@ docker run -d \
   -e MCP_TRANSPORT=sse \
   -e MCP_PORT=3002 \
   -e MCP_API_BASE_URL=http://pulse-backend-dev:3000 \
-  -e MCP_API_KEY=mcp-dev-key-2026 \
-  -e MCP_USER_EMAIL=mcp-agent@example.com \
-  -e MCP_USER_PASSWORD=McpAgent123! \
+  -e MCP_API_KEY=<your-mcp-api-key> \
+  -e MCP_USER_EMAIL=<your-mcp-user-email> \
+  -e MCP_USER_PASSWORD=<your-mcp-user-password> \
   node:22-slim \
   npx ts-node-dev --transpile-only --respawn src/index.ts
 ```
