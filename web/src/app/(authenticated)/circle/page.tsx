@@ -35,6 +35,8 @@ export default function CirclePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Create circle form
   const [circleName, setCircleName] = useState('');
@@ -123,6 +125,21 @@ export default function CirclePage() {
     }
   };
 
+  const handleDeleteCircle = async () => {
+    if (!activeCircleId) return;
+    setIsDeleting(true);
+    try {
+      await apiClient.deleteCircle(activeCircleId);
+      addToast('success', 'Circle deleted successfully.');
+      setShowDeleteModal(false);
+      await refreshCircles();
+    } catch {
+      addToast('error', 'Failed to delete circle.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleChangeCurrency = async (newCurrency: Currency) => {
     if (!activeCircleId) return;
     try {
@@ -192,10 +209,20 @@ export default function CirclePage() {
                 </div>
               </div>
               {isAdmin && (
-                <button onClick={() => setShowInviteModal(true)} className="btn-primary flex items-center gap-2">
-                  <Send className="h-4 w-4" />
-                  <span className="hidden sm:inline">Invite</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-pulse-red-600 hover:bg-pulse-red-50 transition-colors text-sm font-medium"
+                    aria-label="Delete circle"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </button>
+                  <button onClick={() => setShowInviteModal(true)} className="btn-primary flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    <span className="hidden sm:inline">Invite</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -372,6 +399,35 @@ export default function CirclePage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Circle Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Family Circle" size="sm">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-pulse-red-50 border border-pulse-red-100">
+            <AlertCircle className="h-5 w-5 text-pulse-red-500 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-pulse-red-800">
+              <p className="font-semibold mb-1">This action cannot be undone.</p>
+              <p>
+                Deleting <strong>{circleDetail?.circle.name}</strong> will permanently remove all
+                members, invitations, transactions, categories, cards, and statements associated with
+                this circle.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setShowDeleteModal(false)} className="btn-secondary">Cancel</button>
+            <button
+              type="button"
+              onClick={handleDeleteCircle}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pulse-red-600 text-white font-medium hover:bg-pulse-red-700 transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Delete Circle
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

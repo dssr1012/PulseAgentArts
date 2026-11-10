@@ -308,6 +308,11 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteCircle(circleId: string) {
+    const response = await this.client.delete(`/circles/${circleId}`);
+    return response.data;
+  }
+
   // ============ Transaction API ============
 
   private flattenTransaction(item: Record<string, unknown>): Record<string, unknown> {

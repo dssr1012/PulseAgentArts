@@ -91,6 +91,15 @@ export class CircleController {
   ) {
     return this.circleService.removeMember(circleId, memberUserId, userId);
   }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a circle (admin only)' })
+  async deleteCircle(
+    @Param('id') circleId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.circleService.deleteCircle(circleId, userId);
+  }
 }
 
 @ApiTags('Invitations')

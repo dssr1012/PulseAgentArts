@@ -354,6 +354,25 @@ export class CircleService {
     this.logger.log(`Member ${memberUserId} removed from circle ${circleId}`);
   }
 
+  async deleteCircle(circleId: string, userId: string) {
+    const membership = await this.prisma.familyGroupMember.findFirst({
+      where: { groupId: circleId, userId },
+    });
+
+    if (!membership || membership.role !== 'admin') {
+      throw new ForbiddenException({
+        errorCode: 'CIRCLE_PERMISSION_DENIED',
+        message: 'Only circle administrators can delete a circle',
+      });
+    }
+
+    await this.prisma.familyGroup.delete({
+      where: { id: circleId },
+    });
+
+    this.logger.log(`Circle ${circleId} deleted by user ${userId}`);
+  }
+
   async getInvitations(circleId: string, userId: string) {
     const membership = await this.prisma.familyGroupMember.findFirst({
       where: { groupId: circleId, userId },

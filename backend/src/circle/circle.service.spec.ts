@@ -64,6 +64,7 @@ describe('CircleService', () => {
               create: jest.fn(),
               findUnique: jest.fn(),
               findMany: jest.fn(),
+              delete: jest.fn(),
             },
             invitation: {
               create: jest.fn(),
@@ -480,6 +481,40 @@ describe('CircleService', () => {
       await expect(
         service.removeMember('circle-1', 'user-99', 'user-1'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ─── Delete Circle ───────────────────────────────────────────────
+
+  describe('deleteCircle', () => {
+    it('should allow admin to delete a circle', async () => {
+      (prisma.familyGroupMember.findFirst as jest.Mock).mockResolvedValue(mockMembership);
+      (prisma.familyGroup.delete as jest.Mock).mockResolvedValue(undefined);
+
+      await service.deleteCircle('circle-1', 'user-1');
+
+      expect(prisma.familyGroup.delete).toHaveBeenCalledWith({
+        where: { id: 'circle-1' },
+      });
+    });
+
+    it('should throw ForbiddenException for non-admin', async () => {
+      (prisma.familyGroupMember.findFirst as jest.Mock).mockResolvedValue({
+        ...mockMembership,
+        role: 'member',
+      });
+
+      await expect(
+        service.deleteCircle('circle-1', 'user-2'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException for non-member', async () => {
+      (prisma.familyGroupMember.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.deleteCircle('circle-1', 'user-99'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
