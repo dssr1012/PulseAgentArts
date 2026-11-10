@@ -61,23 +61,26 @@ export class PdfStatementParser implements IStatementParser {
     const doc = await PDFJS.getDocument({ data: new Uint8Array(fileBuffer), password });
     let text = '';
 
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      let lastY: number | undefined;
-      let pageText = '';
-      for (const item of content.items) {
-        if (lastY === item.transform[5] || lastY === undefined) {
-          pageText += item.str;
-        } else {
-          pageText += '\n' + item.str;
+    try {
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        let lastY: number | undefined;
+        let pageText = '';
+        for (const item of content.items) {
+          if (lastY === item.transform[5] || lastY === undefined) {
+            pageText += item.str;
+          } else {
+            pageText += '\n' + item.str;
+          }
+          lastY = item.transform[5];
         }
-        lastY = item.transform[5];
+        text += pageText + '\n\n';
       }
-      text += pageText + '\n\n';
+    } finally {
+      await doc.destroy();
     }
 
-    doc.destroy();
     return text;
   }
 

@@ -31,8 +31,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else {
         message = exceptionResponse as string;
       }
-    } else if (exception instanceof Error) {
-      message = exception.message;
     }
 
     const correlationCtx = getCorrelationContext();

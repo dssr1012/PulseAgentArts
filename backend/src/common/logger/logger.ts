@@ -72,6 +72,15 @@ export function setCorrelationContext(ctx: CorrelationContext): void {
   asyncLocalStorage.enterWith(ctx);
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHORT_ID_RE = /^[0-9a-f]{16}$/i;
+
+function sanitizeHeader(value: string | undefined, fallback: string): string {
+  if (!value || value.length > 64) return fallback;
+  if (UUID_RE.test(value) || SHORT_ID_RE.test(value)) return value;
+  return fallback;
+}
+
 export function createCorrelationContext(headers: Record<string, string | string[] | undefined>): CorrelationContext {
   const incomingTraceId = headers['x-trace-id'] as string | undefined;
   const incomingSpanId = headers['x-span-id'] as string | undefined;
@@ -80,9 +89,9 @@ export function createCorrelationContext(headers: Record<string, string | string
   const spanId = randomUUID().replace(/-/g, '').substring(0, 16);
 
   return {
-    trace_id: incomingTraceId || randomUUID(),
-    span_id: incomingSpanId || spanId,
-    req_id: incomingReqId || randomUUID(),
+    trace_id: sanitizeHeader(incomingTraceId, randomUUID()),
+    span_id: sanitizeHeader(incomingSpanId, spanId),
+    req_id: sanitizeHeader(incomingReqId, randomUUID()),
   };
 }
 
