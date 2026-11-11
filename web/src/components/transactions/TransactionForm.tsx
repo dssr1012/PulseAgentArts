@@ -80,9 +80,10 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
         description: description || undefined,
         merchant_name: merchantName || undefined,
         is_private: isPrivate,
-        hidden_until: isPrivate && hiddenUntil ? new Date(hiddenUntil).toISOString() : undefined,
+        hidden_until: isPrivate && hiddenUntil ? new Date(hiddenUntil + 'T00:00:00').toISOString() : undefined,
         payment_method: paymentMethod,
         card_id: paymentMethod === 'card' ? cardId : undefined,
+        transaction_date: new Date(transactionDate + 'T00:00:00').toISOString(),
       };
 
       if (transaction) {
@@ -91,10 +92,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
         addToast('success', 'Transaction updated successfully.');
       } else if (type === 'expense') {
         // Create expense
-        await apiClient.createExpense({
-          ...baseData,
-          transaction_date: new Date(transactionDate).toISOString(),
-        });
+        await apiClient.createExpense(baseData);
         addToast('success', 'Expense added successfully.');
       } else {
         // Create income
@@ -103,7 +101,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           currency,
           category_id: categoryId || undefined,
           description: description || undefined,
-          income_date: new Date(transactionDate).toISOString(),
+          income_date: new Date(transactionDate + 'T00:00:00').toISOString(),
           payment_method: paymentMethod,
           card_id: paymentMethod === 'card' ? cardId : undefined,
         });
