@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { CircleModule } from './circle/circle.module';
 import { TransactionModule } from './transaction/transaction.module';
@@ -24,6 +26,7 @@ import { LoggerModule } from './common/logger/logger.module';
       envFilePath: ['.env', '../.env'],
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     LoggerModule,
     CommonModule,
     AuthModule,
@@ -39,6 +42,9 @@ import { LoggerModule } from './common/logger/logger.module';
     RegexDictModule,
     AuditModule,
     WhatsappModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

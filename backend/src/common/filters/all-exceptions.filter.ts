@@ -31,6 +31,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else {
         message = exceptionResponse as string;
       }
+
+      if (status === HttpStatus.NOT_FOUND && errorCode === 'INTERNAL_ERROR') {
+        message = 'Resource not found';
+        errorCode = 'NOT_FOUND';
+      }
+      if (status === HttpStatus.BAD_REQUEST && errorCode === 'INTERNAL_ERROR') {
+        errorCode = 'VALIDATION_ERROR';
+      }
+    } else {
+      message = 'Internal server error';
+      errorCode = 'INTERNAL_ERROR';
     }
 
     const correlationCtx = getCorrelationContext();

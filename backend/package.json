@@ -27,6 +27,7 @@
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/schedule": "^4.0.0",
     "@nestjs/swagger": "^7.2.0",
+    "@nestjs/throttler": "^6.7.1",
     "@prisma/client": "^5.22.0",
     "@types/cookie-parser": "^1.4.10",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
