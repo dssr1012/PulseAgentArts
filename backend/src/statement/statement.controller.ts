@@ -11,7 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { StatementService } from './statement.service';
-import { ConfirmStatementDto } from './dto/statement.dto';
+import { AcceptItemsDto, ReportFraudDto } from './dto/statement.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -23,15 +23,35 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class StatementController {
   constructor(private readonly statementService: StatementService) {}
 
-  @Post(':previewId/confirm')
-  @ApiOperation({ summary: 'Confirm a parsed statement and create expenses' })
-  async confirmStatement(
+  @Get(':previewId/reconcile')
+  @ApiOperation({ summary: 'Cross-reference statement items against existing expenses' })
+  async reconcileStatement(
+    @Param('previewId') previewId: string,
+    @CurrentUser('circleId') circleId: string,
+  ) {
+    return this.statementService.reconcileStatement(previewId, circleId);
+  }
+
+  @Post(':previewId/accept')
+  @ApiOperation({ summary: 'Accept selected statement items as card expenses' })
+  async acceptItems(
     @Param('previewId') previewId: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('circleId') circleId: string,
-    @Body() dto?: ConfirmStatementDto,
+    @Body() dto: AcceptItemsDto,
   ) {
-    return this.statementService.confirmStatement(previewId, userId, circleId, dto);
+    return this.statementService.acceptItems(previewId, userId, circleId, dto);
+  }
+
+  @Post(':previewId/fraud')
+  @ApiOperation({ summary: 'Report statement items as fraudulent charges' })
+  async reportFraud(
+    @Param('previewId') previewId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('circleId') circleId: string,
+    @Body() dto: ReportFraudDto,
+  ) {
+    return this.statementService.reportFraud(previewId, userId, circleId, dto);
   }
 }
 

@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { LoadingOverlay } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/Tabs';
 import { StatementUploader } from '@/components/cards/StatementUploader';
-import { StatementPreviewComponent } from '@/components/cards/StatementPreview';
+import { StatementReconciliation } from '@/components/cards/StatementReconciliation';
 import {
   Plus,
   CreditCard as CreditCardIcon,
@@ -21,6 +21,7 @@ import {
   Calendar,
   DollarSign,
   CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function CardsPage() {
@@ -33,7 +34,7 @@ export default function CardsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
-  const [statementPreview, setStatementPreview] = useState<StatementPreview | null>(null);
+  const [reconciliationPreviewId, setReconciliationPreviewId] = useState<string | null>(null);
   const [showStatementsModal, setShowStatementsModal] = useState(false);
   const [cardStatements, setCardStatements] = useState<any[]>([]);
   const [isLoadingStatements, setIsLoadingStatements] = useState(false);
@@ -97,7 +98,7 @@ export default function CardsPage() {
   const handleUploadClick = (card: CreditCard) => {
     setSelectedCard(card);
     setShowUploadModal(true);
-    setStatementPreview(null);
+    setReconciliationPreviewId(null);
   };
 
   const handleViewStatements = async (card: CreditCard) => {
@@ -115,21 +116,14 @@ export default function CardsPage() {
   };
 
   const handleStatementParsed = (preview: StatementPreview) => {
-    setStatementPreview(preview);
+    setReconciliationPreviewId(preview.preview_id);
   };
 
-  const handleStatementConfirmed = async () => {
-    if (!statementPreview) return;
-    try {
-      await apiClient.confirmStatement(statementPreview.preview_id);
-      addToast('success', 'Statement confirmed and expenses created.');
-      setShowUploadModal(false);
-      setStatementPreview(null);
-      setSelectedCard(null);
-      fetchCards();
-    } catch {
-      addToast('error', 'Failed to confirm statement.');
-    }
+  const handleResumeReconciliation = (stmtId: string) => {
+    setShowStatementsModal(false);
+    setCardStatements([]);
+    setReconciliationPreviewId(stmtId);
+    setShowUploadModal(true);
   };
 
   return (
@@ -285,22 +279,22 @@ export default function CardsPage() {
       {/* Statement Upload Modal */}
       <Modal
         isOpen={showUploadModal}
-        onClose={() => { setShowUploadModal(false); setStatementPreview(null); }}
-        title={statementPreview ? 'Statement Preview' : 'Upload Statement'}
+        onClose={() => { setShowUploadModal(false); setReconciliationPreviewId(null); }}
+        title={reconciliationPreviewId ? 'Statement Reconciliation' : 'Upload Statement'}
         size="xl"
       >
-        {selectedCard && !statementPreview && (
+        {selectedCard && !reconciliationPreviewId && (
           <StatementUploader
             cardId={selectedCard.id}
             onParsed={handleStatementParsed}
             onCancel={() => setShowUploadModal(false)}
           />
         )}
-        {statementPreview && (
-          <StatementPreviewComponent
-            preview={statementPreview}
-            onConfirm={handleStatementConfirmed}
-            onReject={() => { setStatementPreview(null); }}
+        {reconciliationPreviewId && (
+          <StatementReconciliation
+            previewId={reconciliationPreviewId}
+            onComplete={() => fetchCards()}
+            onClose={() => { setShowUploadModal(false); setReconciliationPreviewId(null); setSelectedCard(null); }}
           />
         )}
       </Modal>
@@ -384,6 +378,15 @@ export default function CardsPage() {
                       ))}
                     </div>
                   </div>
+                )}
+                {!stmt.is_confirmed && (
+                  <button
+                    onClick={() => handleResumeReconciliation(stmt.id)}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    Resume Reconciliation
+                  </button>
                 )}
               </div>
             ))}

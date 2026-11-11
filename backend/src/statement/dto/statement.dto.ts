@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsDateString, IsArray, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsDateString, IsArray, ValidateNested, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -21,13 +21,31 @@ export class StatementItemDto {
   currency: string;
 }
 
-export class ConfirmStatementDto {
+export class AcceptItemDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  statementItemId: string;
+
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  categoryId?: string;
+}
+
+export class AcceptItemsDto {
+  @ApiProperty({ type: [AcceptItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => StatementItemDto)
-  items?: StatementItemDto[];
+  @Type(() => AcceptItemDto)
+  items: AcceptItemDto[];
+}
+
+export class ReportFraudDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  statementItemIds: string[];
 }
 
 export class StatementPreviewResponseDto {

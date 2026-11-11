@@ -11,10 +11,13 @@ import { PrismaService } from '../common/prisma.service';
 import { PdfStatementParser } from './parsers/pdf-statement.parser';
 import { StatementPasswordCrypto } from '../common/statement-password.crypto';
 import { AnomalyService } from '../anomaly/anomaly.service';
-import { ConfirmStatementDto } from './dto/statement.dto';
+import { AcceptItemsDto, ReportFraudDto } from './dto/statement.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+
+const MATCH_DATE_TOLERANCE_DAYS = 3;
+const MATCH_AMOUNT_TOLERANCE = 0.01;
 
 @Injectable()
 export class StatementService {
@@ -34,7 +37,6 @@ export class StatementService {
     file: Express.Multer.File,
     password?: string,
   ) {
-    // Validate card exists in circle
     const card = await this.prisma.creditCard.findFirst({
       where: { id: cardId, groupId: circleId },
     });
@@ -53,7 +55,6 @@ export class StatementService {
       });
     }
 
-    // Validate file format
     const allowedMimes = ['application/pdf', 'text/plain'];
     if (!allowedMimes.includes(file.mimetype)) {
       throw new BadRequestException({
@@ -62,7 +63,6 @@ export class StatementService {
       });
     }
 
-    // Validate file size
     const maxSize = this.config.get<number>('STATEMENT_MAX_SIZE_MB', 10) * 1024 * 1024;
     if (file.size > maxSize) {
       throw new BadRequestException({
@@ -79,7 +79,6 @@ export class StatementService {
         const text = file.buffer.toString('utf-8');
         parsed = this.pdfParser.parseText(text);
       } else {
-        // Build password candidates: user-provided first, then stored card password
         const passwordsToTry: string[] = [];
         if (password) passwordsToTry.push(password);
         if (card.statementPassword) {
@@ -91,7 +90,6 @@ export class StatementService {
         parsed = await this.pdfParser.parse(file.buffer, passwordsToTry);
       }
 
-      // If a password was provided and worked, store it on the card for next time
       if (password && file.mimetype === 'application/pdf') {
         const encrypted = this.passwordCrypto.encrypt(password);
         await this.prisma.creditCard.update({
@@ -100,7 +98,6 @@ export class StatementService {
         });
       }
 
-      // Check for duplicate statement (same card + same closing date)
       const closeDate = parsed.closingDate;
       const dayStart = new Date(closeDate);
       dayStart.setHours(0, 0, 0, 0);
@@ -115,13 +112,23 @@ export class StatementService {
       });
 
       if (existing) {
-        throw new ConflictException({
-          errorCode: 'STMT_ALREADY_UPLOADED',
-          message: `A statement with closing date ${closeDate.toLocaleDateString()} has already been uploaded for this card.`,
+        if (existing.isConfirmed) {
+          throw new ConflictException({
+            errorCode: 'STMT_ALREADY_UPLOADED',
+            message: `A statement with closing date ${closeDate.toLocaleDateString()} has already been confirmed for this card.`,
+          });
+        }
+        await this.prisma.statementItem.deleteMany({
+          where: { statementId: existing.id },
         });
+        await this.prisma.cardStatement.delete({
+          where: { id: existing.id },
+        });
+        if (existing.filePath) {
+          try { fs.unlinkSync(existing.filePath); } catch { }
+        }
       }
 
-      // Store file temporarily
       const tempDir = this.config.get<string>('STATEMENT_TEMP_DIR', './uploads/statements');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
@@ -132,7 +139,6 @@ export class StatementService {
       fs.writeFileSync(filePath, file.buffer);
       tempFilePath = filePath;
 
-      // Create statement record
       const statement = await this.prisma.cardStatement.create({
         data: {
           id: previewId,
@@ -146,7 +152,6 @@ export class StatementService {
         },
       });
 
-      // Create statement items
       if (parsed.items.length > 0) {
         await this.prisma.statementItem.createMany({
           data: parsed.items.map((item) => ({
@@ -194,11 +199,129 @@ export class StatementService {
     }
   }
 
-  async confirmStatement(
+  async reconcileStatement(previewId: string, circleId: string) {
+    const statement = await this.prisma.cardStatement.findUnique({
+      where: { id: previewId },
+      include: {
+        card: true,
+        items: true,
+      },
+    });
+
+    if (!statement) {
+      throw new NotFoundException({
+        errorCode: 'STMT_PREVIEW_NOT_FOUND',
+        message: 'Statement not found',
+      });
+    }
+
+    if (statement.card.groupId !== circleId) {
+      throw new ForbiddenException({
+        errorCode: 'STMT_PERMISSION_DENIED',
+        message: 'Statement not found',
+      });
+    }
+
+    const existingExpenses = await this.prisma.transaction.findMany({
+      where: {
+        groupId: circleId,
+        type: 'expense',
+        confirmationStatus: 'confirmed',
+      },
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        transactionDate: true,
+        description: true,
+        categoryId: true,
+        paymentMethod: true,
+        cardId: true,
+        source: true,
+      },
+    });
+
+    const alreadyLinkedExpenseIds = new Set(
+      (await this.prisma.statementItem.findMany({
+        where: { matchedTransactionId: { not: null } },
+        select: { matchedTransactionId: true },
+      })).map((si) => si.matchedTransactionId!),
+    );
+
+    const reconciledItems = statement.items.map((item) => {
+      const itemDate = new Date(item.date);
+      const itemAmount = Number(item.amount);
+
+      let bestMatch: typeof existingExpenses[0] | null = null;
+      let bestDateDist = Infinity;
+
+      for (const expense of existingExpenses) {
+        if (alreadyLinkedExpenseIds.has(expense.id)) continue;
+        if (expense.currency !== item.currency) continue;
+
+        const amountDiff = Math.abs(Number(expense.amount) - itemAmount);
+        if (amountDiff > MATCH_AMOUNT_TOLERANCE) continue;
+
+        const dateDiffMs = Math.abs(
+          new Date(expense.transactionDate).getTime() - itemDate.getTime(),
+        );
+        const dateDiffDays = dateDiffMs / (1000 * 60 * 60 * 24);
+        if (dateDiffDays > MATCH_DATE_TOLERANCE_DAYS) continue;
+
+        if (dateDiffDays < bestDateDist) {
+          bestDateDist = dateDiffDays;
+          bestMatch = expense;
+        }
+      }
+
+      return {
+        id: item.id,
+        date: item.date.toISOString(),
+        description: item.description,
+        amount: itemAmount,
+        currency: item.currency,
+        matched: bestMatch !== null,
+        matchedExpense: bestMatch
+          ? {
+              id: bestMatch.id,
+              description: bestMatch.description,
+              amount: Number(bestMatch.amount),
+              transactionDate: bestMatch.transactionDate.toISOString(),
+              paymentMethod: bestMatch.paymentMethod,
+              source: bestMatch.source,
+            }
+          : null,
+      };
+    });
+
+    const matchedCount = reconciledItems.filter((i) => i.matched).length;
+    const unmatchedCount = reconciledItems.length - matchedCount;
+
+    return {
+      previewId: statement.id,
+      cardId: statement.cardId,
+      cardLastFour: statement.card.lastFourDigits,
+      cardBank: statement.card.bankName,
+      closingDate: statement.closeDate.toISOString(),
+      dueDate: statement.dueDate.toISOString(),
+      totalAmount: Number(statement.totalAmount),
+      minPayment: Number(statement.minPayment),
+      currency: statement.currency,
+      isConfirmed: statement.isConfirmed,
+      items: reconciledItems,
+      summary: {
+        total: reconciledItems.length,
+        matched: matchedCount,
+        unmatched: unmatchedCount,
+      },
+    };
+  }
+
+  async acceptItems(
     previewId: string,
     userId: string,
     circleId: string,
-    dto?: ConfirmStatementDto,
+    dto: AcceptItemsDto,
   ) {
     const statement = await this.prisma.cardStatement.findUnique({
       where: { id: previewId },
@@ -208,7 +331,7 @@ export class StatementService {
     if (!statement) {
       throw new NotFoundException({
         errorCode: 'STMT_PREVIEW_NOT_FOUND',
-        message: 'Statement preview not found',
+        message: 'Statement not found',
       });
     }
 
@@ -226,50 +349,70 @@ export class StatementService {
       });
     }
 
-    // Use provided items or original parsed items
-    const items = dto?.items || statement.items.map((item) => ({
-      date: item.date.toISOString(),
-      description: item.description,
-      amount: Number(item.amount),
-      currency: item.currency,
-    }));
+    if (!dto.items || dto.items.length === 0) {
+      throw new BadRequestException({
+        errorCode: 'STMT_NO_ITEMS_SELECTED',
+        message: 'No items selected to add as expenses',
+      });
+    }
 
-    // Get the first category for statement expenses
+    const statementItemIds = dto.items.map((i) => i.statementItemId);
+    const selectedItems = statement.items.filter((si) =>
+      statementItemIds.includes(si.id),
+    );
+
+    if (selectedItems.length === 0) {
+      throw new BadRequestException({
+        errorCode: 'STMT_ITEMS_NOT_FOUND',
+        message: 'Selected items not found in this statement',
+      });
+    }
+
     const defaultCategory = await this.prisma.category.findFirst({
       where: { groupId: circleId, isDefault: true },
     });
 
-    // Create expense records from items
     const createdExpenseIds: string[] = [];
 
     await this.prisma.$transaction(async (tx) => {
-      // Mark statement as confirmed
-      await tx.cardStatement.update({
-        where: { id: previewId },
-        data: { isConfirmed: true },
-      });
+      for (const acceptItem of dto.items) {
+        const stmtItem = selectedItems.find((si) => si.id === acceptItem.statementItemId);
+        if (!stmtItem) continue;
 
-      // Create expenses from items
-      for (const item of items) {
+        const categoryId = acceptItem.categoryId || defaultCategory?.id || '';
+
         const expense = await tx.transaction.create({
           data: {
             groupId: circleId,
             userId,
             type: 'expense',
-            amount: item.amount,
-            currency: item.currency as any,
-            categoryId: defaultCategory?.id || '',
-            description: item.description,
+            amount: stmtItem.amount,
+            currency: stmtItem.currency as any,
+            categoryId,
+            description: stmtItem.description,
+            merchantName: stmtItem.description,
             source: 'statement',
             confirmationStatus: 'confirmed',
-            transactionDate: new Date(item.date),
+            transactionDate: stmtItem.date,
+            paymentMethod: 'card',
+            cardId: statement.cardId,
           },
         });
+
+        await tx.statementItem.update({
+          where: { id: stmtItem.id },
+          data: { matchedTransactionId: expense.id },
+        });
+
         createdExpenseIds.push(expense.id);
       }
+
+      await tx.cardStatement.update({
+        where: { id: previewId },
+        data: { isConfirmed: true },
+      });
     });
 
-    // Purge temp file
     if (statement.filePath) {
       try {
         fs.unlinkSync(statement.filePath);
@@ -278,14 +421,108 @@ export class StatementService {
       }
     }
 
-    // Trigger anomaly detection so unmatched charges appear immediately
     try {
       await this.anomalyService.detectAnomaliesForCircle(circleId);
     } catch (err) {
-      this.logger.warn(`Anomaly detection failed after statement confirm: ${err.message}`);
+      this.logger.warn(`Anomaly detection failed after statement accept: ${err.message}`);
     }
 
-    return { createdExpenseIds };
+    return { createdExpenseIds, count: createdExpenseIds.length };
+  }
+
+  async reportFraud(
+    previewId: string,
+    userId: string,
+    circleId: string,
+    dto: ReportFraudDto,
+  ) {
+    const statement = await this.prisma.cardStatement.findUnique({
+      where: { id: previewId },
+      include: { card: true, items: true },
+    });
+
+    if (!statement) {
+      throw new NotFoundException({
+        errorCode: 'STMT_PREVIEW_NOT_FOUND',
+        message: 'Statement not found',
+      });
+    }
+
+    if (statement.card.groupId !== circleId) {
+      throw new ForbiddenException({
+        errorCode: 'STMT_PERMISSION_DENIED',
+        message: 'Statement not found',
+      });
+    }
+
+    if (!dto.statementItemIds || dto.statementItemIds.length === 0) {
+      throw new BadRequestException({
+        errorCode: 'STMT_NO_ITEMS_SELECTED',
+        message: 'No items selected to report as fraud',
+      });
+    }
+
+    const fraudItems = statement.items.filter((si) =>
+      dto.statementItemIds.includes(si.id),
+    );
+
+    if (fraudItems.length === 0) {
+      throw new BadRequestException({
+        errorCode: 'STMT_ITEMS_NOT_FOUND',
+        message: 'Selected items not found in this statement',
+      });
+    }
+
+    const defaultCategory = await this.prisma.category.findFirst({
+      where: { groupId: circleId, isDefault: true },
+    });
+
+    const reportedIds: string[] = [];
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of fraudItems) {
+        const fraudExpense = await tx.transaction.create({
+          data: {
+            groupId: circleId,
+            userId,
+            type: 'expense',
+            amount: item.amount,
+            currency: item.currency as any,
+            categoryId: defaultCategory?.id || '',
+            description: `[FRAUD REPORT] ${item.description}`,
+            merchantName: item.description,
+            source: 'statement',
+            confirmationStatus: 'pending_confirmation',
+            transactionDate: item.date,
+            paymentMethod: 'card',
+            cardId: statement.cardId,
+          },
+        });
+
+        await tx.statementItem.update({
+          where: { id: item.id },
+          data: { matchedTransactionId: fraudExpense.id },
+        });
+
+        await tx.anomalyAlert.create({
+          data: {
+            groupId: circleId,
+            transactionId: fraudExpense.id,
+            statementItemId: item.id,
+            alertType: 'orphaned_duplicate',
+            severity: 'critical',
+          },
+        });
+
+        reportedIds.push(fraudExpense.id);
+      }
+    });
+
+    this.logger.warn(
+      `Fraud reported for ${fraudItems.length} items on statement ${previewId} (card ${statement.cardId})`,
+    );
+
+    return { reportedIds, count: reportedIds.length };
   }
 
   async listStatements(cardId: string, circleId: string) {

@@ -450,8 +450,18 @@ class ApiClient {
     return response.data;
   }
 
-  async confirmStatement(previewId: string, data?: { items?: unknown[] }) {
-    const response = await this.client.post(`/statements/${previewId}/confirm`, data);
+  async reconcileStatement(previewId: string) {
+    const response = await this.client.get(`/statements/${previewId}/reconcile`);
+    return response.data;
+  }
+
+  async acceptStatementItems(previewId: string, items: { statementItemId: string; categoryId?: string }[]) {
+    const response = await this.client.post(`/statements/${previewId}/accept`, { items });
+    return response.data;
+  }
+
+  async reportStatementFraud(previewId: string, statementItemIds: string[]) {
+    const response = await this.client.post(`/statements/${previewId}/fraud`, { statementItemIds });
     return response.data;
   }
 

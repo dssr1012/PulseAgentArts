@@ -259,6 +259,50 @@ export interface ConfirmStatementRequest {
   items?: StatementItem[];
 }
 
+export interface ReconciledItem {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  currency: Currency;
+  matched: boolean;
+  matchedExpense: {
+    id: string;
+    description: string | null;
+    amount: number;
+    transactionDate: string;
+    paymentMethod: string;
+    source: string;
+  } | null;
+}
+
+export interface ReconciliationResult {
+  previewId: string;
+  cardId: string;
+  cardLastFour: string;
+  cardBank: string;
+  closingDate: string;
+  dueDate: string;
+  totalAmount: number;
+  minPayment: number;
+  currency: Currency;
+  isConfirmed: boolean;
+  items: ReconciledItem[];
+  summary: {
+    total: number;
+    matched: number;
+    unmatched: number;
+  };
+}
+
+export interface AcceptItemsRequest {
+  items: { statementItemId: string; categoryId?: string }[];
+}
+
+export interface ReportFraudRequest {
+  statementItemIds: string[];
+}
+
 // ============ Anomaly Types ============
 
 export interface AnomalyAlert {
