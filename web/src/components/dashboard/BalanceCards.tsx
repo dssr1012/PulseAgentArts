@@ -3,6 +3,7 @@
 import React from 'react';
 import type { BalanceResponse } from '@/types';
 import { formatCurrency, cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n';
 import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,13 +12,15 @@ interface BalanceCardsProps {
 }
 
 export function BalanceCards({ balance }: BalanceCardsProps) {
+  const { t } = useTranslation();
+
   if (!balance) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { title: 'Total Income', color: 'emerald' },
-          { title: 'Total Expenses', color: 'red' },
-          { title: 'Net Balance', color: 'blue' },
+          { title: t('dashboard.totalIncome'), color: 'emerald' },
+          { title: t('dashboard.totalExpenses'), color: 'red' },
+          { title: t('dashboard.netBalance'), color: 'blue' },
         ].map((card) => (
           <div key={card.title} className="card animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
@@ -32,21 +35,21 @@ export function BalanceCards({ balance }: BalanceCardsProps) {
 
   const cards = [
     {
-      title: 'Total Income',
+      title: t('dashboard.totalIncome'),
       amount: balance.total_income,
       currency: balance.base_currency,
       icon: <TrendingUp className="h-6 w-6" />,
       bgClass: 'balance-card-emerald',
     },
     {
-      title: 'Total Expenses',
+      title: t('dashboard.totalExpenses'),
       amount: balance.total_expenses,
       currency: balance.base_currency,
       icon: <TrendingDown className="h-6 w-6" />,
       bgClass: 'balance-card-red',
     },
     {
-      title: 'Net Balance',
+      title: t('dashboard.netBalance'),
       amount: Math.abs(balance.net_balance),
       currency: balance.base_currency,
       icon: <Wallet className="h-6 w-6" />,
@@ -72,16 +75,15 @@ export function BalanceCards({ balance }: BalanceCardsProps) {
           <p className="text-2xl font-bold text-white">
             {card.prefix || ''}{formatCurrency(card.amount, card.currency)}
           </p>
-          {/* Currency breakdown */}
           {balance.breakdown_by_currency && Object.keys(balance.breakdown_by_currency).length > 1 && (
             <div className="mt-3 space-y-1">
               {Object.entries(balance.breakdown_by_currency).map(([currency, amounts]) => (
                 <div key={currency} className="flex items-center justify-between text-xs text-white/70">
                   <span>{currency}</span>
                   <span>
-                    {card.title === 'Total Income'
+                    {card.title === t('dashboard.totalIncome')
                       ? formatCurrency(amounts.income, currency)
-                      : card.title === 'Total Expenses'
+                      : card.title === t('dashboard.totalExpenses')
                       ? formatCurrency(amounts.expenses, currency)
                       : formatCurrency(amounts.income - amounts.expenses, currency)}
                   </span>

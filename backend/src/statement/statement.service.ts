@@ -160,6 +160,8 @@ export class StatementService {
             description: item.description,
             amount: item.amount,
             currency: item.currency as any,
+            installmentNumber: item.installmentNumber ?? null,
+            totalInstallments: item.totalInstallments ?? null,
           })),
         });
       }
@@ -176,6 +178,8 @@ export class StatementService {
           description: item.description,
           amount: item.amount,
           currency: item.currency,
+          installmentNumber: item.installmentNumber ?? null,
+          totalInstallments: item.totalInstallments ?? null,
         })),
       };
     } catch (error) {
@@ -281,6 +285,8 @@ export class StatementService {
         amount: itemAmount,
         currency: item.currency,
         matched: bestMatch !== null,
+        installmentNumber: item.installmentNumber,
+        totalInstallments: item.totalInstallments,
         matchedExpense: bestMatch
           ? {
               id: bestMatch.id,
@@ -381,6 +387,83 @@ export class StatementService {
 
         const categoryId = acceptItem.categoryId || defaultCategory?.id || '';
 
+        let recurringTransactionId: string | undefined = undefined;
+        let installmentNumber: number | undefined = undefined;
+
+        if (stmtItem.installmentNumber && stmtItem.totalInstallments) {
+          installmentNumber = stmtItem.installmentNumber;
+          const totalInstallments = stmtItem.totalInstallments;
+          const baseMerchant = stmtItem.description.replace(/\s+Cuota\s+\d+\s*\/\s*\d+/i, '').trim();
+          const itemAmount = Number(stmtItem.amount);
+          const itemDate = new Date(stmtItem.date);
+          const dayOfMonth = itemDate.getDate();
+
+          let recurringTx = await tx.recurringTransaction.findFirst({
+            where: {
+              groupId: circleId,
+              merchantName: baseMerchant,
+              amount: stmtItem.amount,
+              cardId: statement.cardId,
+              totalInstallments,
+            },
+          });
+
+          if (recurringTx) {
+            const newCurrent = Math.max(recurringTx.currentInstallment ?? 0, installmentNumber);
+            const isComplete = newCurrent >= totalInstallments;
+
+            let nextDate: Date | null = null;
+            if (!isComplete) {
+              nextDate = new Date(itemDate);
+              nextDate.setMonth(nextDate.getMonth() + 1);
+            }
+
+            recurringTx = await tx.recurringTransaction.update({
+              where: { id: recurringTx.id },
+              data: {
+                currentInstallment: newCurrent,
+                lastExecutionDate: itemDate,
+                nextExecutionDate: nextDate,
+                isActive: !isComplete,
+              },
+            });
+          } else {
+            const isComplete = installmentNumber >= totalInstallments;
+            let nextDate: Date | null = null;
+            if (!isComplete) {
+              nextDate = new Date(itemDate);
+              nextDate.setMonth(nextDate.getMonth() + 1);
+            }
+
+            recurringTx = await tx.recurringTransaction.create({
+              data: {
+                groupId: circleId,
+                userId,
+                type: 'expense',
+                description: baseMerchant,
+                merchantName: baseMerchant,
+                amount: stmtItem.amount,
+                currency: stmtItem.currency as any,
+                categoryId,
+                paymentMethod: 'card',
+                cardId: statement.cardId,
+                frequency: 'monthly',
+                interval: 1,
+                dayOfMonth,
+                startDate: itemDate,
+                lastExecutionDate: itemDate,
+                nextExecutionDate: nextDate,
+                isActive: !isComplete,
+                totalInstallments,
+                currentInstallment: installmentNumber,
+                originalAmount: itemAmount * totalInstallments,
+              },
+            });
+          }
+
+          recurringTransactionId = recurringTx.id;
+        }
+
         const expense = await tx.transaction.create({
           data: {
             groupId: circleId,
@@ -396,6 +479,8 @@ export class StatementService {
             transactionDate: stmtItem.date,
             paymentMethod: 'card',
             cardId: statement.cardId,
+            recurringTransactionId,
+            installmentNumber,
           },
         });
 
@@ -561,6 +646,8 @@ export class StatementService {
         amount: Number(item.amount),
         currency: item.currency,
         matchedTransactionId: item.matchedTransactionId,
+        installmentNumber: item.installmentNumber,
+        totalInstallments: item.totalInstallments,
       })),
     }));
   }

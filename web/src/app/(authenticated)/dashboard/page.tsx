@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import type { BalanceResponse, Transaction, Category } from '@/types';
@@ -16,6 +17,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 export default function DashboardPage() {
   const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -53,14 +55,14 @@ export default function DashboardPage() {
         if (categoriesData.status === 'fulfilled') setCategories(categoriesData.value);
         if (anomalyData.status === 'fulfilled') setAnomalyCount(anomalyData.value.total || 0);
       } catch {
-        addToast('error', 'Failed to load dashboard data.');
+        addToast('error', t('dashboard.loadFailed'));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [activeCircleId, showConsolidated, addToast]);
+  }, [activeCircleId, showConsolidated, addToast, t]);
 
   const handleRefresh = async () => {
     if (!activeCircleId) return;
@@ -68,9 +70,9 @@ export default function DashboardPage() {
     try {
       const balanceData = await apiClient.getBalance(activeCircleId, showConsolidated);
       setBalance(balanceData);
-      addToast('success', 'Dashboard refreshed.');
+      addToast('success', t('dashboard.refreshed'));
     } catch {
-      addToast('error', 'Failed to refresh.');
+      addToast('error', t('dashboard.refreshFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -94,16 +96,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Welcome back, {user?.given_name || 'User'}
+            {t('dashboard.welcomeBack')} {user?.given_name || t('dashboard.user')}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Currency conversion toggle */}
           <button
             onClick={() => setShowConsolidated(!showConsolidated)}
             className={cn(
@@ -115,47 +115,43 @@ export default function DashboardPage() {
             aria-pressed={showConsolidated}
           >
             <RefreshCw className="h-4 w-4" />
-            Consolidated
+            {t('dashboard.consolidated')}
           </button>
           <button
             onClick={handleRefresh}
             className="btn-secondary"
-            aria-label="Refresh dashboard"
+            aria-label={t('dashboard.refreshDashboard')}
           >
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      {/* Stale rates warning */}
       {balance?.rates_stale && (
         <div className="alert-yellow flex items-center gap-3" role="alert">
           <AlertTriangle className="h-5 w-5 text-pulse-yellow-500 shrink-0" />
           <p className="text-sm text-pulse-yellow-800">
-            Exchange rates may be outdated. Last update: {balance.last_rate_fetch ? new Date(balance.last_rate_fetch).toLocaleString() : 'unknown'}
+            {t('dashboard.staleRates')} {balance.last_rate_fetch ? new Date(balance.last_rate_fetch).toLocaleString() : t('dashboard.unknown')}
           </p>
         </div>
       )}
 
-      {/* Anomaly count alert */}
       {anomalyCount > 0 && (
         <div className="alert-yellow flex items-center justify-between" role="alert">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-pulse-yellow-500 shrink-0" />
             <p className="text-sm text-pulse-yellow-800">
-              You have <strong>{anomalyCount}</strong> irregular expense alert{anomalyCount > 1 ? 's' : ''} requiring attention.
+              {t('dashboard.anomalyAlert')} <strong>{anomalyCount}</strong> {anomalyCount > 1 ? t('dashboard.irregularAlertsPlural') : t('dashboard.irregularAlerts')} {t('dashboard.requiringAttention')}
             </p>
           </div>
           <a href="/anomalies" className="text-sm font-semibold text-pulse-yellow-700 hover:underline">
-            View →
+            {t('dashboard.view')}
           </a>
         </div>
       )}
 
-      {/* Balance Cards */}
       <BalanceCards balance={balance} />
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CategoryChart
           categories={categories}
@@ -164,10 +160,8 @@ export default function DashboardPage() {
         <TrendChart transactions={transactions} />
       </div>
 
-      {/* Quick Actions */}
       <QuickActions />
 
-      {/* Recent Transactions */}
       <TransactionFeed transactions={transactions} />
     </div>
   );

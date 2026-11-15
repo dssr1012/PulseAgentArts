@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import type { CreditCard, StatementPreview, CardType, CardMode } from '@/types';
 import { Modal } from '@/components/ui/Modal';
@@ -15,6 +16,8 @@ import {
   Plus,
   CreditCard as CreditCardIcon,
   Trash2,
+  Edit2,
+  AlertCircle,
   Loader2,
   Upload,
   FileText,
@@ -27,6 +30,7 @@ import {
 export default function CardsPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [cards, setCards] = useState<CreditCard[]>([]);
@@ -47,6 +51,16 @@ export default function CardsPage() {
   const [tag, setTag] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  // Edit card state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Delete card state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingCard, setDeletingCard] = useState<CreditCard | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchCards = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -57,7 +71,7 @@ export default function CardsPage() {
       if (error.code === 'CIRCLE_NOT_FOUND') {
         router.replace('/circle');
       } else {
-        addToast('error', 'Failed to load cards.');
+        addToast('error', t('cards.loadFailed'));
       }
       setCards([]);
     } finally {
@@ -70,13 +84,13 @@ export default function CardsPage() {
   const handleCreateCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{4}$/.test(lastFourDigits)) {
-      addToast('warning', 'Please enter exactly 4 digits.');
+      addToast('warning', t('cards.invalidDigits'));
       return;
     }
     setIsCreating(true);
     try {
       await apiClient.createCard({ bank_name: bankName, card_type: cardType, card_mode: cardMode, last_4_digits: lastFourDigits, tag: tag || undefined });
-      addToast('success', 'Card registered successfully.');
+      addToast('success', t('cards.registered'));
       setShowAddModal(false);
       setBankName('');
       setLastFourDigits('');
@@ -86,9 +100,9 @@ export default function CardsPage() {
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'CARD_SENSITIVE_DATA_REJECTED') {
-        addToast('error', 'Sensitive card data detected. Only last 4 digits are allowed.');
+        addToast('error', t('cards.sensitiveData'));
       } else {
-        addToast('error', 'Failed to register card.');
+        addToast('error', t('cards.registerFailed'));
       }
     } finally {
       setIsCreating(false);
@@ -101,6 +115,69 @@ export default function CardsPage() {
     setReconciliationPreviewId(null);
   };
 
+  const handleEditClick = (card: CreditCard) => {
+    setEditingCard(card);
+    setBankName(card.bank_name);
+    setCardType(card.card_type);
+    setCardMode(card.card_mode);
+    setLastFourDigits(card.last_four_digits);
+    setTag(card.tag || '');
+    setShowEditModal(true);
+  };
+
+  const handleEditCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCard) return;
+    if (!/^\d{4}$/.test(lastFourDigits)) {
+      addToast('warning', t('cards.invalidDigits'));
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      await apiClient.updateCard(editingCard.id, {
+        bank_name: bankName,
+        card_type: cardType,
+        card_mode: cardMode,
+        last_4_digits: lastFourDigits,
+        tag: tag || undefined,
+      });
+      addToast('success', t('cards.updated'));
+      setShowEditModal(false);
+      setEditingCard(null);
+      fetchCards();
+    } catch {
+      addToast('error', t('cards.updateFailed'));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteClick = (card: CreditCard) => {
+    setDeletingCard(card);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteCard = async () => {
+    if (!deletingCard) return;
+    setIsDeleting(true);
+    try {
+      const result = await apiClient.deleteCard(deletingCard.id);
+      const affected = result?.affected_expenses ?? result?.affectedExpenses ?? 0;
+      if (affected > 0) {
+        addToast('warning', `${t('cards.deletedWithExpenses')} ${affected} ${t('cards.deletedWithExpenses2')}`);
+      } else {
+        addToast('success', t('cards.deletedSuccess'));
+      }
+      setShowDeleteModal(false);
+      setDeletingCard(null);
+      fetchCards();
+    } catch {
+      addToast('error', t('cards.deleteFailed'));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleViewStatements = async (card: CreditCard) => {
     setSelectedCard(card);
     setShowStatementsModal(true);
@@ -109,7 +186,7 @@ export default function CardsPage() {
       const data = await apiClient.listStatements(card.id);
       setCardStatements(data);
     } catch {
-      addToast('error', 'Failed to load statements.');
+      addToast('error', t('cards.statementsLoadFailed'));
     } finally {
       setIsLoadingStatements(false);
     }
@@ -130,11 +207,11 @@ export default function CardsPage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cards & Statements</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage credit cards and upload statements</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('cards.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('cards.subtitle')}</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Add Card
+          <Plus className="h-4 w-4" /> {t('cards.addCard')}
         </button>
       </div>
 
@@ -142,7 +219,7 @@ export default function CardsPage() {
       <div className="alert-yellow flex items-center gap-3" role="alert">
         <CreditCardIcon className="h-5 w-5 text-pulse-yellow-500 shrink-0" />
         <p className="text-sm text-pulse-yellow-800">
-          For your security, we never store full card numbers or CVV codes. Only the last 4 digits are saved.
+          {t('cards.securityNotice')}
         </p>
       </div>
 
@@ -151,9 +228,9 @@ export default function CardsPage() {
       ) : cards.length === 0 ? (
         <EmptyState
           icon={<CreditCardIcon className="h-12 w-12" />}
-          title="No cards registered"
-          description="Add a credit card to start uploading statements."
-          action={{ label: 'Add Card', onClick: () => setShowAddModal(true) }}
+          title={t('cards.noCards')}
+          description={t('cards.noCardsDesc')}
+          action={{ label: t('cards.addCard'), onClick: () => setShowAddModal(true) }}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -163,9 +240,25 @@ export default function CardsPage() {
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-pulse-blue-500 to-pulse-blue-700 flex items-center justify-center shadow-sm">
                   <CreditCardIcon className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                  {card.card_type}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                    {card.card_type}
+                  </span>
+                  <button
+                    onClick={() => handleEditClick(card)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-pulse-blue-600 hover:bg-pulse-blue-50 transition-colors"
+                    title={t('cards.editCardTitle')}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(card)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-pulse-red-600 hover:bg-pulse-red-50 transition-colors"
+                    title={t('cards.deleteCardTitle')}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <p className="text-sm font-semibold text-gray-900">{card.bank_name}</p>
               <p className="text-lg font-mono text-gray-600 mt-1">•••• •••• •••• {card.last_four_digits}</p>
@@ -180,14 +273,14 @@ export default function CardsPage() {
                   className="btn-primary w-full flex items-center justify-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
-                  Upload Statement
+                  {t('cards.uploadStatement')}
                 </button>
                 <button
                   onClick={() => handleViewStatements(card)}
                   className="btn-secondary w-full flex items-center justify-center gap-2"
                 >
                   <FileText className="h-4 w-4" />
-                  View Statements
+                  {t('cards.viewStatements')}
                 </button>
               </div>
             </div>
@@ -196,10 +289,10 @@ export default function CardsPage() {
       )}
 
       {/* Add Card Modal */}
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Register Credit Card" size="sm">
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title={t('cards.registerCard')} size="sm">
         <form onSubmit={handleCreateCard} className="space-y-4">
           <div>
-            <label htmlFor="bankName" className="label-field">Bank Name</label>
+            <label htmlFor="bankName" className="label-field">{t('cards.bankName')}</label>
             <input
               id="bankName"
               type="text"
@@ -212,7 +305,7 @@ export default function CardsPage() {
             />
           </div>
           <div>
-            <label htmlFor="cardType" className="label-field">Card Type</label>
+            <label htmlFor="cardType" className="label-field">{t('cards.cardType')}</label>
             <select
               id="cardType"
               value={cardType}
@@ -224,19 +317,19 @@ export default function CardsPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="cardMode" className="label-field">Card Mode</label>
+            <label htmlFor="cardMode" className="label-field">{t('cards.cardMode')}</label>
             <select
               id="cardMode"
               value={cardMode}
               onChange={(e) => setCardMode(e.target.value as CardMode)}
               className="select-field"
             >
-              <option value="debit">Debit</option>
-              <option value="credit">Credit</option>
+              <option value="debit">{t('common.debit')}</option>
+              <option value="credit">{t('common.credit')}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="lastFour" className="label-field">Last 4 Digits</label>
+            <label htmlFor="lastFour" className="label-field">{t('cards.last4Digits')}</label>
             <input
               id="lastFour"
               type="text"
@@ -249,11 +342,11 @@ export default function CardsPage() {
               pattern="\d{4}"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Only the last 4 digits. We never store full card numbers.
+              {t('cards.last4Hint')}
             </p>
           </div>
           <div>
-            <label htmlFor="cardTag" className="label-field">Tag (optional)</label>
+            <label htmlFor="cardTag" className="label-field">{t('cards.tagOptional')}</label>
             <input
               id="cardTag"
               type="text"
@@ -264,23 +357,129 @@ export default function CardsPage() {
               maxLength={50}
             />
             <p className="text-xs text-gray-500 mt-1">
-              A label to identify this card when creating expenses.
+              {t('cards.tagHint')}
             </p>
           </div>
           <div className="flex items-center justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">{t('common.cancel')}</button>
             <button type="submit" disabled={isCreating} className="btn-primary">
-              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Register Card'}
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('cards.registerCardBtn')}
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit Card Modal */}
+      <Modal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditingCard(null); }} title={t('cards.editCard')} size="sm">
+        <form onSubmit={handleEditCard} className="space-y-4">
+          <div>
+            <label htmlFor="editBankName" className="label-field">{t('cards.bankName')}</label>
+            <input
+              id="editBankName"
+              type="text"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className="input-field"
+              placeholder="e.g., Santander, Galicia"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="editCardType" className="label-field">{t('cards.cardType')}</label>
+            <select
+              id="editCardType"
+              value={cardType}
+              onChange={(e) => setCardType(e.target.value as CardType)}
+              className="select-field"
+            >
+              <option value="Visa">Visa</option>
+              <option value="Mastercard">Mastercard</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="editCardMode" className="label-field">{t('cards.cardMode')}</label>
+            <select
+              id="editCardMode"
+              value={cardMode}
+              onChange={(e) => setCardMode(e.target.value as CardMode)}
+              className="select-field"
+            >
+              <option value="debit">{t('common.debit')}</option>
+              <option value="credit">{t('common.credit')}</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="editLastFour" className="label-field">{t('cards.last4Digits')}</label>
+            <input
+              id="editLastFour"
+              type="text"
+              value={lastFourDigits}
+              onChange={(e) => setLastFourDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              className="input-field font-mono text-center text-lg tracking-widest"
+              placeholder="••••"
+              maxLength={4}
+              required
+              pattern="\d{4}"
+            />
+          </div>
+          <div>
+            <label htmlFor="editCardTag" className="label-field">{t('cards.tagOptional')}</label>
+            <input
+              id="editCardTag"
+              type="text"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              className="input-field"
+              placeholder="e.g., Daily purchases, Travel"
+              maxLength={50}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-4">
+            <button type="button" onClick={() => { setShowEditModal(false); setEditingCard(null); }} className="btn-secondary">{t('common.cancel')}</button>
+            <button type="submit" disabled={isUpdating} className="btn-primary">
+              {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.saveChanges')}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Card Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeletingCard(null); }} title={t('cards.deleteCard')} size="sm">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-pulse-red-50 border border-pulse-red-100">
+            <AlertCircle className="h-5 w-5 text-pulse-red-500 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-pulse-red-800">
+              <p className="font-semibold mb-1">{t('common.thisActionCannotBeUndone')}</p>
+              <p>
+                {t('cards.deleteCardWarning')} <strong>{deletingCard?.bank_name}</strong> (•••• {deletingCard?.last_four_digits}) {t('cards.deleteCardWarning2')} <strong>{t('cards.deleteCardWarning3')}</strong> {t('cards.deleteCardWarning4')} <strong>{t('cards.deleteCardWarning5')}</strong> {t('cards.deleteCardWarning6')}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              onClick={() => { setShowDeleteModal(false); setDeletingCard(null); }}
+              className="btn-secondary"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              onClick={handleDeleteCard}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pulse-red-600 text-white font-medium hover:bg-pulse-red-700 transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {t('cards.deleteCardBtn')}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Statement Upload Modal */}
       <Modal
         isOpen={showUploadModal}
         onClose={() => { setShowUploadModal(false); setReconciliationPreviewId(null); }}
-        title={reconciliationPreviewId ? 'Statement Reconciliation' : 'Upload Statement'}
+        title={reconciliationPreviewId ? t('cards.statementReconciliation') : t('cards.uploadStatement')}
         size="xl"
       >
         {selectedCard && !reconciliationPreviewId && (
@@ -303,7 +502,7 @@ export default function CardsPage() {
       <Modal
         isOpen={showStatementsModal}
         onClose={() => { setShowStatementsModal(false); setCardStatements([]); }}
-        title={selectedCard ? `Statements — ${selectedCard.bank_name} •••• ${selectedCard.last_four_digits}` : 'Statements'}
+        title={selectedCard ? `${t('cards.statements')} — ${selectedCard.bank_name} •••• ${selectedCard.last_four_digits}` : t('cards.statements')}
         size="xl"
       >
         {isLoadingStatements ? (
@@ -311,8 +510,8 @@ export default function CardsPage() {
         ) : cardStatements.length === 0 ? (
           <EmptyState
             icon={<FileText className="h-12 w-12" />}
-            title="No statements yet"
-            description="Upload a statement to see charges and payment details here."
+            title={t('cards.noStatements')}
+            description={t('cards.noStatementsDesc')}
           />
         ) : (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
@@ -323,35 +522,35 @@ export default function CardsPage() {
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        Close: {new Date(stmt.close_date).toLocaleDateString()}
+                        {t('cards.close')} {new Date(stmt.close_date).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        Due: {new Date(stmt.due_date).toLocaleDateString()}
+                        {t('cards.due')} {new Date(stmt.due_date).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                   {stmt.is_confirmed ? (
                     <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                      <CheckCircle className="h-3 w-3" /> Confirmed
+                      <CheckCircle className="h-3 w-3" /> {t('common.confirmed')}
                     </span>
                   ) : (
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                      Pending
+                      {t('common.pending')}
                     </span>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-red-50 rounded-lg p-3">
-                    <p className="text-xs text-red-600">Total Amount</p>
+                    <p className="text-xs text-red-600">{t('cards.totalAmount')}</p>
                     <p className="text-lg font-bold text-red-700">
                       ${Number(stmt.total_amount).toFixed(2)}
                     </p>
                   </div>
                   <div className="bg-yellow-50 rounded-lg p-3">
-                    <p className="text-xs text-yellow-600">Minimum Payment</p>
+                    <p className="text-xs text-yellow-600">{t('cards.minimumPayment')}</p>
                     <p className="text-lg font-bold text-yellow-700">
                       ${Number(stmt.min_payment).toFixed(2)}
                     </p>
@@ -360,7 +559,7 @@ export default function CardsPage() {
                 {stmt.items && stmt.items.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">
-                      Charges ({stmt.items.length})
+                      {t('cards.charges')} ({stmt.items.length})
                     </p>
                     <div className="space-y-1">
                       {stmt.items.map((item: any) => (
@@ -385,7 +584,7 @@ export default function CardsPage() {
                     className="btn-primary w-full flex items-center justify-center gap-2"
                   >
                     <AlertTriangle className="h-4 w-4" />
-                    Resume Reconciliation
+                    {t('cards.resumeReconciliation')}
                   </button>
                 )}
               </div>

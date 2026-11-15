@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { Eye, EyeOff, Loader2, Check } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register, loginWithGoogle, isLoading, error, clearError } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const [givenName, setGivenName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,18 +33,18 @@ export default function RegisterPage() {
     clearError();
 
     if (!givenName || !email || !password) {
-      addToast('warning', 'Please fill in all fields.');
+      addToast('warning', t('register.fillAllFields'));
       return;
     }
 
     if (!isPasswordValid) {
-      addToast('warning', 'Password does not meet the requirements.');
+      addToast('warning', t('register.passwordRequirements'));
       return;
     }
 
     try {
       await register(email, password, givenName);
-      addToast('success', 'Account created successfully!');
+      addToast('success', t('register.accountCreated'));
       router.push('/dashboard');
     } catch {
       // Error handled by auth context
@@ -53,10 +55,10 @@ export default function RegisterPage() {
     clearError();
     try {
       await loginWithGoogle();
-      addToast('success', 'Welcome!');
+      addToast('success', t('register.welcome'));
       router.push('/dashboard');
     } catch {
-      addToast('error', 'Google sign-in failed. Please try again.');
+      addToast('error', t('register.googleFailed'));
     }
   };
 
@@ -68,13 +70,13 @@ export default function RegisterPage() {
           <div className="h-14 w-14 rounded-2xl bg-pulse-blue-500 flex items-center justify-center shadow-lg mb-4">
             <span className="text-white font-bold text-2xl">P</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">PulseExpends</h1>
-          <p className="text-sm text-gray-500 mt-1">Create your account</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('register.appName')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('register.createAccount')}</p>
         </div>
 
         {/* Card */}
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Get started for free</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('register.getStarted')}</h2>
 
           {/* Google SSO Button — only when configured */}
           {googleEnabled && (
@@ -92,7 +94,7 @@ export default function RegisterPage() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                <span>Continuar con Google</span>
+                <span>{t('register.continueWithGoogle')}</span>
               </button>
 
               {/* Divider */}
@@ -101,7 +103,7 @@ export default function RegisterPage() {
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-2 text-gray-500">or register with email</span>
+                  <span className="bg-white px-2 text-gray-500">{t('register.orRegisterWithEmail')}</span>
                 </div>
               </div>
             </>
@@ -118,7 +120,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="givenName" className="label-field">
-                Full name
+                {t('register.fullName')}
               </label>
               <input
                 id="givenName"
@@ -126,7 +128,7 @@ export default function RegisterPage() {
                 value={givenName}
                 onChange={(e) => setGivenName(e.target.value)}
                 className="input-field"
-                placeholder="Your name"
+                placeholder={t('register.fullNamePlaceholder')}
                 required
                 autoComplete="name"
                 disabled={isLoading}
@@ -135,7 +137,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="email" className="label-field">
-                Email address
+                {t('register.emailAddress')}
               </label>
               <input
                 id="email"
@@ -152,7 +154,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="label-field">
-                Password
+                {t('register.password')}
               </label>
               <div className="relative">
                 <input
@@ -161,7 +163,7 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field pr-10"
-                  placeholder="Create a password"
+                  placeholder={t('register.passwordPlaceholder')}
                   required
                   autoComplete="new-password"
                   disabled={isLoading}
@@ -170,16 +172,16 @@ export default function RegisterPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('register.hidePassword') : t('register.showPassword')}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {/* Password strength indicators */}
               <div className="mt-2 space-y-1">
-                <PasswordCheck satisfied={hasMinLength} text="At least 8 characters" />
-                <PasswordCheck satisfied={hasUppercase} text="One uppercase letter" />
-                <PasswordCheck satisfied={hasNumber} text="One number" />
+                <PasswordCheck satisfied={hasMinLength} text={t('register.minLength')} />
+                <PasswordCheck satisfied={hasUppercase} text={t('register.oneUppercase')} />
+                <PasswordCheck satisfied={hasNumber} text={t('register.oneNumber')} />
               </div>
             </div>
 
@@ -191,10 +193,10 @@ export default function RegisterPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Creating account...
+                  {t('register.creatingAccount')}
                 </>
               ) : (
-                'Create account'
+                t('register.createAccountBtn')
               )}
             </button>
           </form>
@@ -203,7 +205,7 @@ export default function RegisterPage() {
           <p className="mt-6 text-center text-sm text-gray-500">
             Already have an account?{' '}
             <Link href="/login" className="font-semibold text-pulse-blue-500 hover:text-pulse-blue-600">
-              Sign in
+              {t('register.signIn')}
             </Link>
           </p>
         </div>

@@ -4,6 +4,7 @@ import React from 'react';
 import type { Transaction } from '@/types';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { useTranslation } from '@/i18n';
 import { Lock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -12,11 +13,13 @@ interface TransactionFeedProps {
 }
 
 export function TransactionFeed({ transactions }: TransactionFeedProps) {
+  const { t } = useTranslation();
+
   if (transactions.length === 0) {
     return (
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
-        <p className="text-sm text-gray-500">No transactions yet. Add your first expense!</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.recentTransactions')}</h3>
+        <p className="text-sm text-gray-500">{t('dashboard.noTransactionsYet')}</p>
       </div>
     );
   }
@@ -24,12 +27,12 @@ export function TransactionFeed({ transactions }: TransactionFeedProps) {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.recentTransactions')}</h3>
         <Link
           href="/transactions"
           className="text-sm font-medium text-pulse-blue-500 hover:text-pulse-blue-600"
         >
-          View all →
+          {t('dashboard.viewAll')}
         </Link>
       </div>
 
@@ -43,6 +46,7 @@ export function TransactionFeed({ transactions }: TransactionFeedProps) {
 }
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
+  const { t } = useTranslation();
   const isExpense = transaction.type === 'expense';
   const isPrivate = transaction.is_private;
 
@@ -51,7 +55,6 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
       className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
       role="listitem"
     >
-      {/* Icon */}
       <div
         className={cn(
           'h-10 w-10 rounded-full flex items-center justify-center shrink-0',
@@ -65,21 +68,20 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
         )}
       </div>
 
-      {/* Details */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-gray-900 truncate">
             {isPrivate ? (
               <span className="flex items-center gap-1">
                 <Lock className="h-3.5 w-3.5 text-pulse-red-500" />
-                Gasto Privado
+                {t('dashboard.privateExpense')}
               </span>
             ) : (
               transaction.description || transaction.merchant_name || transaction.category_name
             )}
           </p>
           {isPrivate && (
-            <Badge variant="private">Private</Badge>
+            <Badge variant="private">{t('transactions.private')}</Badge>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
@@ -89,7 +91,6 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
         </div>
       </div>
 
-      {/* Amount */}
       <div className="text-right shrink-0">
         <p
           className={cn(

@@ -27,6 +27,36 @@ export class CreateCardDto {
   tag?: string;
 }
 
+export class UpdateCardDto {
+  @ApiPropertyOptional({ example: 'Santander' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  bankName?: string;
+
+  @ApiPropertyOptional({ enum: ['Visa', 'Mastercard'] })
+  @IsOptional()
+  @IsIn(['Visa', 'Mastercard'])
+  cardType?: string;
+
+  @ApiPropertyOptional({ enum: ['debit', 'credit'] })
+  @IsOptional()
+  @IsIn(['debit', 'credit'])
+  cardMode?: string;
+
+  @ApiPropertyOptional({ example: '1234' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}$/, { message: 'Must be exactly 4 digits' })
+  last4Digits?: string;
+
+  @ApiPropertyOptional({ example: 'Daily purchases' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  tag?: string;
+}
+
 export class CardResponseDto {
   id: string;
   bankName: string;

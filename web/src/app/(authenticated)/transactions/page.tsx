@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate, cn, CURRENCIES } from '@/lib/utils';
 import type { Transaction, Category, TransactionQuery, Currency } from '@/types';
@@ -25,6 +26,8 @@ import {
   ChevronRight,
   Wallet,
   CreditCard as CreditCardIcon,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -32,6 +35,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 export default function TransactionsPage() {
   const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -86,12 +90,12 @@ export default function TransactionsPage() {
       if (error.code === 'CIRCLE_NOT_FOUND') {
         router.replace('/circle');
       } else {
-        addToast('error', 'Failed to load transactions.');
+        addToast('error', t('transactions.loadFailed'));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, filters, addToast, router]);
+  }, [activeCircleId, filters, addToast, router, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,7 +124,7 @@ export default function TransactionsPage() {
         if (error.code === 'CIRCLE_NOT_FOUND') {
           if (!cancelled) router.replace('/circle');
         } else if (!cancelled) {
-          addToast('error', 'Failed to load transactions.');
+          addToast('error', t('transactions.loadFailed'));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -129,7 +133,7 @@ export default function TransactionsPage() {
 
     doFetch();
     return () => { cancelled = true; };
-  }, [activeCircleId, filters, addToast]);
+  }, [activeCircleId, filters, addToast, t]);
 
   const filteredTransactions = searchQuery
     ? allTransactions.filter(t =>
@@ -143,13 +147,13 @@ export default function TransactionsPage() {
   useEffect(() => { setPage(1); }, [filters, searchQuery]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) return;
+    if (!confirm(t('transactions.confirmDelete'))) return;
     try {
       await apiClient.deleteExpense(id);
-      addToast('success', 'Transaction deleted.');
+      addToast('success', t('transactions.deleted'));
       fetchData();
     } catch {
-      addToast('error', 'Failed to delete transaction.');
+      addToast('error', t('transactions.deleteFailed'));
     }
   };
 
@@ -164,8 +168,8 @@ export default function TransactionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-sm text-gray-500 mt-1">{filteredTransactions.length} total transactions</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('transactions.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{filteredTransactions.length} {t('transactions.totalTransactions')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -173,14 +177,14 @@ export default function TransactionsPage() {
             className="btn-danger flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Expense
+            {t('transactions.expense')}
           </button>
           <button
             onClick={() => { setModalType('income'); setShowAddModal(true); }}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-pulse-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pulse-emerald-600"
           >
             <Plus className="h-4 w-4" />
-            Income
+            {t('transactions.income')}
           </button>
         </div>
       </div>
@@ -193,7 +197,7 @@ export default function TransactionsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by merchant or description..."
+            placeholder={t('transactions.searchPlaceholder')}
             className="input-field pl-10"
           />
         </div>
@@ -206,13 +210,13 @@ export default function TransactionsPage() {
 
       {/* Transaction List */}
       {isLoading ? (
-        <LoadingOverlay message="Loading transactions..." />
+        <LoadingOverlay message={t('transactions.loadingTransactions')} />
       ) : transactions.length === 0 ? (
         <EmptyState
           icon={<ArrowDownRight className="h-12 w-12" />}
-          title="No transactions found"
-          description="Start tracking your expenses by adding your first transaction."
-          action={{ label: 'Add Expense', onClick: () => { setModalType('expense'); setShowAddModal(true); } }}
+          title={t('transactions.noTransactions')}
+          description={t('transactions.noTransactionsDesc')}
+          action={{ label: t('transactions.addExpense'), onClick: () => { setModalType('expense'); setShowAddModal(true); } }}
         />
       ) : (
         <>
@@ -221,62 +225,79 @@ export default function TransactionsPage() {
             <table className="w-full" role="table">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Currency</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.date')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.description')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.category')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('transactions.payment')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('common.currency')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('common.amount')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {transactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(t.transaction_date)}</td>
+                {transactions.map((txn) => (
+                  <tr key={txn.id} className={cn('transition-colors', txn.confirmation_status === 'pending_confirmation' ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-gray-50')}>
+                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(txn.transaction_date)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        {t.is_private && <Lock className="h-3.5 w-3.5 text-pulse-red-500" />}
+                        {txn.is_private && <Lock className="h-3.5 w-3.5 text-pulse-red-500" />}
                         <span className="text-sm font-medium text-gray-900">
-                          {t.is_private && t.user_id !== user?.id
-                            ? 'Gasto Privado'
-                            : t.description || t.merchant_name || '-'}
+                          {txn.is_private && txn.user_id !== user?.id
+                            ? t('transactions.privateExpense')
+                            : txn.description || txn.merchant_name || '-'}
                         </span>
-                        {t.is_private && <Badge variant="private">Private</Badge>}
+                        {txn.is_private && <Badge variant="private">{t('transactions.private')}</Badge>}
+                        {txn.confirmation_status === 'pending_confirmation' && (
+                          <Badge variant="warning">
+                            <AlertCircle className="h-3 w-3 mr-0.5" />
+                            {t('transactions.pendingReview')}
+                          </Badge>
+                        )}
+                        {txn.recurring_transaction_id && (
+                          <Badge variant="info">
+                            <RefreshCw className="h-3 w-3 mr-0.5" />
+                            {txn.installment_number ? `${t('transactions.installment')} ${txn.installment_number}` : t('transactions.recurring')}
+                          </Badge>
+                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{t.category_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{txn.category_name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {t.payment_method === 'card' && t.card ? (
+                      {txn.payment_method === 'card' && txn.card ? (
                         <span className="inline-flex items-center gap-1">
                           <CreditCardIcon className="h-3.5 w-3.5 text-gray-400" />
-                          <span className={t.card.card_mode === 'credit' ? 'text-amber-600 font-medium' : 'text-blue-600 font-medium'}>
-                            {t.card.card_mode === 'credit' ? 'Credit' : 'Debit'}
+                          <span className={txn.card.card_mode === 'credit' ? 'text-amber-600 font-medium' : 'text-blue-600 font-medium'}>
+                            {txn.card.card_mode === 'credit' ? t('common.credit') : t('common.debit')}
                           </span>
-                          {t.card.bank_name} •••• {t.card.last_four_digits}
+                          {txn.card.bank_name} •••• {txn.card.last_four_digits}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1">
                           <Wallet className="h-3.5 w-3.5 text-gray-400" />
-                          Cash
+                          {t('common.cash')}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{t.currency}</td>
-                    <td className={`px-4 py-3 text-sm font-semibold text-right ${t.type === 'expense' ? 'text-pulse-red-500' : 'text-pulse-emerald-500'}`}>
-                      {t.type === 'expense' ? '-' : '+'}{formatCurrency(t.amount, t.currency)}
+                    <td className="px-4 py-3 text-sm text-gray-600">{txn.currency}</td>
+                    <td className={`px-4 py-3 text-sm font-semibold text-right ${txn.type === 'expense' ? 'text-pulse-red-500' : 'text-pulse-emerald-500'}`}>
+                      {txn.type === 'expense' ? '-' : '+'}{formatCurrency(txn.amount, txn.currency)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => setEditingTransaction(t)}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-pulse-blue-500 hover:bg-pulse-blue-50 transition-colors"
+                          onClick={() => setEditingTransaction(txn)}
+                          className={cn(
+                            'p-1.5 rounded-md transition-colors',
+                            txn.confirmation_status === 'pending_confirmation'
+                              ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-100'
+                              : 'text-gray-400 hover:text-pulse-blue-500 hover:bg-pulse-blue-50'
+                          )}
                           aria-label="Edit transaction"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(t.id)}
+                          onClick={() => handleDelete(txn.id)}
                           className="p-1.5 rounded-md text-gray-400 hover:text-pulse-red-500 hover:bg-pulse-red-50 transition-colors"
                           aria-label="Delete transaction"
                         >
@@ -292,24 +313,30 @@ export default function TransactionsPage() {
 
           {/* Mobile list */}
           <div className="md:hidden space-y-3">
-            {transactions.map((t) => (
-              <div key={t.id} className="card p-4">
+            {transactions.map((txn) => (
+              <div key={txn.id} className={cn('card p-4', txn.confirmation_status === 'pending_confirmation' && 'border-amber-300 bg-amber-50')}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={cn('h-10 w-10 rounded-full flex items-center justify-center', t.type === 'expense' ? 'bg-pulse-red-100' : 'bg-pulse-emerald-100')}>
-                      {t.type === 'expense' ? <ArrowDownRight className="h-5 w-5 text-pulse-red-500" /> : <ArrowUpRight className="h-5 w-5 text-pulse-emerald-500" />}
+                    <div className={cn('h-10 w-10 rounded-full flex items-center justify-center', txn.confirmation_status === 'pending_confirmation' ? 'bg-amber-100' : txn.type === 'expense' ? 'bg-pulse-red-100' : 'bg-pulse-emerald-100')}>
+                      {txn.confirmation_status === 'pending_confirmation' ? <AlertCircle className="h-5 w-5 text-amber-500" /> : txn.type === 'expense' ? <ArrowDownRight className="h-5 w-5 text-pulse-red-500" /> : <ArrowUpRight className="h-5 w-5 text-pulse-emerald-500" />}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {t.is_private && t.user_id !== user?.id ? (
-                          <span className="flex items-center gap-1"><Lock className="h-3.5 w-3.5 text-pulse-red-500" /> Gasto Privado</span>
-                        ) : t.description || t.merchant_name || '-'}
+                        {txn.is_private && txn.user_id !== user?.id ? (
+                          <span className="flex items-center gap-1"><Lock className="h-3.5 w-3.5 text-pulse-red-500" /> {t('transactions.privateExpense')}</span>
+                        ) : txn.description || txn.merchant_name || '-'}
                       </p>
-                      <p className="text-xs text-gray-500">{t.category_name} • {formatDate(t.transaction_date)} • {t.payment_method === 'card' && t.card ? `${t.card.card_mode === 'credit' ? 'Credit' : 'Debit'} ${t.card.bank_name} •••• ${t.card.last_four_digits}` : 'Cash'}</p>
+                      <p className="text-xs text-gray-500">{txn.category_name} • {formatDate(txn.transaction_date)} • {txn.payment_method === 'card' && txn.card ? `${txn.card.card_mode === 'credit' ? t('common.credit') : t('common.debit')} ${txn.card.bank_name} •••• ${txn.card.last_four_digits}` : t('common.cash')}</p>
+                      {txn.confirmation_status === 'pending_confirmation' && (
+                        <span className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-amber-700">
+                          <AlertCircle className="h-3 w-3" />
+                          {t('transactions.pendingReviewEdit')}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <p className={cn('text-sm font-semibold', t.type === 'expense' ? 'text-pulse-red-500' : 'text-pulse-emerald-500')}>
-                    {t.type === 'expense' ? '-' : '+'}{formatCurrency(t.amount, t.currency)}
+                  <p className={cn('text-sm font-semibold', txn.type === 'expense' ? 'text-pulse-red-500' : 'text-pulse-emerald-500')}>
+                    {txn.type === 'expense' ? '-' : '+'}{formatCurrency(txn.amount, txn.currency)}
                   </p>
                 </div>
               </div>
@@ -319,7 +346,7 @@ export default function TransactionsPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Page {page} of {Math.max(1, Math.ceil(filteredTransactions.length / LIMIT))}
+              {t('common.page')} {page} {t('common.of')} {Math.max(1, Math.ceil(filteredTransactions.length / LIMIT))}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -347,7 +374,7 @@ export default function TransactionsPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title={modalType === 'expense' ? 'Add Expense' : 'Add Income'}
+        title={modalType === 'expense' ? t('transactions.addExpense') : t('transactions.addIncome')}
         size="lg"
       >
         <TransactionForm
@@ -362,7 +389,7 @@ export default function TransactionsPage() {
       <Modal
         isOpen={!!editingTransaction}
         onClose={() => setEditingTransaction(null)}
-        title="Edit Transaction"
+        title={t('transactions.editTransaction')}
         size="lg"
       >
         {editingTransaction && (

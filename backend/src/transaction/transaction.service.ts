@@ -335,6 +335,8 @@ export class TransactionService {
       updateData.cardId = dto.paymentMethod === 'card' ? dto.cardId : null;
     }
 
+    updateData.confirmationStatus = 'confirmed';
+
     const updated = await this.prisma.transaction.update({
       where: { id: expenseId },
       data: updateData,
@@ -543,6 +545,8 @@ export class TransactionService {
       transactionDate: tx.transactionDate?.toISOString(),
       paymentMethod: tx.paymentMethod,
       cardId: tx.cardId,
+      recurringTransactionId: tx.recurringTransactionId ?? null,
+      installmentNumber: tx.installmentNumber ?? null,
       card: tx.card
         ? {
             id: tx.card.id,

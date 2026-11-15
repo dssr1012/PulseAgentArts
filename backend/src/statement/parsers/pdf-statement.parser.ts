@@ -220,11 +220,17 @@ export class PdfStatementParser implements IStatementParser {
       description = description.replace(/\s+\$$/, '').replace(/\$$/, '').trim();
       if (!description) continue;
 
+      const cuotaMatch = description.match(/Cuota\s+(\d+)\s*\/\s*(\d+)/i);
+      const installmentNumber = cuotaMatch ? parseInt(cuotaMatch[1], 10) : undefined;
+      const totalInstallments = cuotaMatch ? parseInt(cuotaMatch[2], 10) : undefined;
+
       items.push({
         date: new Date(fullYear, parseInt(month, 10) - 1, parseInt(day, 10)),
         description,
         amount: pesos,
         currency: 'ARS',
+        installmentNumber,
+        totalInstallments,
       });
     }
 

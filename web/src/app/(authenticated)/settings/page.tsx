@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
+import { useTranslation } from '@/i18n';
 import {
-  Settings,
   User,
   Mail,
   Shield,
@@ -19,6 +19,7 @@ import {
   Users,
   Moon,
   Sun,
+  Globe,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { addToast } = useToast();
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { resolvedTheme, setTheme } = useTheme();
@@ -70,7 +72,7 @@ export default function SettingsPage() {
         pollRef.current = setInterval(fetchWaStatus, 2000);
       }
     } catch {
-      addToast('error', 'Failed to start WhatsApp connection.');
+      addToast('error', t('settings.connectFailed'));
     } finally {
       setWaLoading(false);
     }
@@ -84,9 +86,9 @@ export default function SettingsPage() {
       setWaQrCode(null);
       setWaPhone(null);
       if (pollRef.current) clearInterval(pollRef.current);
-      addToast('success', 'WhatsApp disconnected.');
+      addToast('success', t('settings.disconnectSuccess'));
     } catch {
-      addToast('error', 'Failed to disconnect WhatsApp.');
+      addToast('error', t('settings.disconnectFailed'));
     } finally {
       setWaLoading(false);
     }
@@ -133,7 +135,7 @@ export default function SettingsPage() {
       }
     } catch {
       setWaGroups(prev);
-      addToast('error', 'Failed to update expense group.');
+      addToast('error', t('settings.groupUpdateFailed'));
     }
   };
 
@@ -141,10 +143,10 @@ export default function SettingsPage() {
     setIsLoggingOut(true);
     try {
       await logout();
-      addToast('success', 'Logged out successfully.');
+      addToast('success', t('settings.loggedOut'));
       router.push('/login');
     } catch {
-      addToast('error', 'Failed to logout.');
+      addToast('error', t('settings.logoutFailed'));
     } finally {
       setIsLoggingOut(false);
     }
@@ -152,13 +154,13 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
 
       {/* Profile Section */}
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <User className="h-5 w-5 text-pulse-blue-500" />
-          Profile
+          {t('settings.profile')}
         </h2>
         <div className="space-y-4">
           <div className="flex items-center gap-4">
@@ -178,11 +180,11 @@ export default function SettingsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
             <div>
-              <p className="text-xs text-gray-500">Auth Provider</p>
+              <p className="text-xs text-gray-500">{t('settings.authProvider')}</p>
               <p className="text-sm font-medium text-gray-900 mt-1">{user?.auth_provider || 'traditional'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Circle Role</p>
+              <p className="text-xs text-gray-500">{t('settings.circleRole')}</p>
               <p className="text-sm font-medium text-gray-900 mt-1 capitalize">{user?.circle_role || 'None'}</p>
             </div>
           </div>
@@ -193,13 +195,13 @@ export default function SettingsPage() {
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           {isDark ? <Moon className="h-5 w-5 text-pulse-blue-500" /> : <Sun className="h-5 w-5 text-pulse-blue-500" />}
-          Appearance
+          {t('settings.appearance')}
         </h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
             <div>
-              <p className="text-sm font-medium text-gray-900">Dark Mode</p>
-              <p className="text-xs text-gray-500">Toggle between light and dark theme</p>
+              <p className="text-sm font-medium text-gray-900">{t('settings.darkMode')}</p>
+              <p className="text-xs text-gray-500">{t('settings.darkModeDesc')}</p>
             </div>
             <button
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -215,6 +217,35 @@ export default function SettingsPage() {
               />
             </button>
           </div>
+          {/* Language selector */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+            <div>
+              <p className="text-sm font-medium text-gray-900">{t('settings.language')}</p>
+              <p className="text-xs text-gray-500">{t('settings.languageDesc')}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => i18n.changeLanguage('es')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  i18n.language === 'es'
+                    ? 'bg-pulse-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                }`}
+              >
+                Español
+              </button>
+              <button
+                onClick={() => i18n.changeLanguage('en')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  i18n.language === 'en'
+                    ? 'bg-pulse-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -222,40 +253,40 @@ export default function SettingsPage() {
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-green-500" />
-          WhatsApp Integration
+          {t('settings.whatsapp')}
         </h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
             <div>
-              <p className="text-sm font-medium text-gray-900">Status</p>
+              <p className="text-sm font-medium text-gray-900">{t('settings.status')}</p>
               <p className="text-xs text-gray-500">
                 {waStatus === 'connected' && waPhone
-                  ? `Connected: ${waPhone}`
+                  ? `${t('settings.connected')}: ${waPhone}`
                   : waStatus === 'connecting'
-                    ? 'Waiting for QR scan...'
-                    : 'Not connected'}
+                    ? t('settings.waitingQr')
+                    : t('settings.notConnected')}
               </p>
             </div>
             {waStatus === 'connected' ? (
               <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-md">
-                <CheckCircle className="h-3 w-3" /> Connected
+                <CheckCircle className="h-3 w-3" /> {t('settings.connected')}
               </span>
             ) : waStatus === 'connecting' ? (
               <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded-md">
-                <Loader2 className="h-3 w-3 animate-spin" /> Connecting
+                <Loader2 className="h-3 w-3 animate-spin" /> {t('settings.connecting')}
               </span>
             ) : (
               <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-200 px-2 py-1 rounded-md">
-                <XCircle className="h-3 w-3" /> Disconnected
+                <XCircle className="h-3 w-3" /> {t('settings.disconnected')}
               </span>
             )}
           </div>
 
           {waStatus === 'connecting' && waQrCode && (
             <div className="flex flex-col items-center gap-3 p-4 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-600">Scan this QR code with your WhatsApp:</p>
+              <p className="text-sm text-gray-600">{t('settings.scanQr')}</p>
               <img src={waQrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
-              <p className="text-xs text-gray-400">WhatsApp → Settings → Linked Devices → Link a Device</p>
+              <p className="text-xs text-gray-400">{t('settings.linkedDevices')}</p>
             </div>
           )}
 
@@ -263,17 +294,17 @@ export default function SettingsPage() {
             <div className="space-y-3">
               <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                 <p className="text-sm text-green-800 mb-1 font-medium">
-                  Select a WhatsApp group as your expense source
+                  {t('settings.selectGroup')}
                 </p>
                 <p className="text-xs text-green-700">
-                  Only messages in selected groups will be loaded as expenses. Create a group called “gastos” in WhatsApp, then pick it here.
+                  {t('settings.selectGroupDesc')}
                 </p>
               </div>
 
               <div className="rounded-lg border border-gray-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
                   <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <Users className="h-4 w-4" /> Your WhatsApp Groups
+                    <Users className="h-4 w-4" /> {t('settings.yourGroups')}
                   </span>
                   <button
                     onClick={fetchWaGroups}
@@ -281,13 +312,13 @@ export default function SettingsPage() {
                     className="text-xs text-pulse-blue-600 hover:text-pulse-blue-700 flex items-center gap-1 disabled:opacity-50"
                   >
                     {waGroupsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                    Refresh
+                    {t('common.refresh')}
                   </button>
                 </div>
 
                 {waGroups.length === 0 ? (
                   <div className="px-4 py-6 text-center text-sm text-gray-500">
-                    {waGroupsLoading ? 'Loading groups...' : 'No groups found. Create a group in WhatsApp first.'}
+                    {waGroupsLoading ? t('settings.loadingGroups') : t('settings.noGroups')}
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
@@ -318,7 +349,7 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-xs text-gray-500 px-1">
-                Message format: <code>gaste 1500 en super</code>, <code>2500 nafta</code>, <code>pagué 800 farmacia</code>
+                {t('settings.messageFormat')} <code>gaste 1500 en super</code>, <code>2500 nafta</code>, <code>pagué 800 farmacia</code>
               </p>
             </div>
           )}
@@ -331,7 +362,7 @@ export default function SettingsPage() {
                 className="btn-primary flex items-center gap-2"
               >
                 {waLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                {waStatus === 'connecting' ? 'Waiting for scan...' : 'Connect WhatsApp'}
+                {waStatus === 'connecting' ? t('settings.waitingScan') : t('settings.connectWhatsapp')}
               </button>
             ) : (
               <button
@@ -340,7 +371,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-2 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-medium hover:bg-red-100"
               >
                 {waLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                Disconnect
+                {t('settings.disconnect')}
               </button>
             )}
             {waStatus === 'connecting' && (
@@ -348,7 +379,7 @@ export default function SettingsPage() {
                 onClick={fetchWaStatus}
                 className="btn-secondary flex items-center gap-2"
               >
-                <RefreshCw className="h-4 w-4" /> Refresh
+                <RefreshCw className="h-4 w-4" /> {t('common.refresh')}
               </button>
             )}
           </div>
@@ -359,25 +390,25 @@ export default function SettingsPage() {
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Shield className="h-5 w-5 text-pulse-blue-500" />
-          Security
+          {t('settings.security')}
         </h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
             <div>
-              <p className="text-sm font-medium text-gray-900">Two-Factor Authentication</p>
-              <p className="text-xs text-gray-500">Add an extra layer of security</p>
+              <p className="text-sm font-medium text-gray-900">{t('settings.twoFactor')}</p>
+              <p className="text-xs text-gray-500">{t('settings.twoFactorDesc')}</p>
             </div>
             <span className="text-xs font-medium text-gray-500 bg-gray-200 px-2 py-1 rounded-md">
-              Coming Soon
+              {t('common.comingSoon')}
             </span>
           </div>
           <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
             <div>
-              <p className="text-sm font-medium text-gray-900">Change Password</p>
-              <p className="text-xs text-gray-500">Update your password</p>
+              <p className="text-sm font-medium text-gray-900">{t('settings.changePassword')}</p>
+              <p className="text-xs text-gray-500">{t('settings.changePasswordDesc')}</p>
             </div>
             <span className="text-xs font-medium text-gray-500 bg-gray-200 px-2 py-1 rounded-md">
-              Coming Soon
+              {t('common.comingSoon')}
             </span>
           </div>
         </div>
@@ -395,7 +426,7 @@ export default function SettingsPage() {
           ) : (
             <LogOut className="h-4 w-4" />
           )}
-          Sign Out
+          {t('settings.signOut')}
         </button>
       </div>
     </div>

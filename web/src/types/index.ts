@@ -8,7 +8,7 @@ export type AuthProvider = 'traditional' | 'google_sso' | 'hybrid';
 
 export type TransactionType = 'expense' | 'income';
 
-export type TransactionSource = 'manual' | 'statement' | 'notification_capture' | 'mcp';
+export type TransactionSource = 'manual' | 'statement' | 'notification_capture' | 'mcp' | 'whatsapp' | 'recurring';
 
 export type ConfirmationStatus = 'confirmed' | 'pending_confirmation';
 
@@ -158,6 +158,8 @@ export interface Transaction {
   payment_method: PaymentMethod;
   card_id: string | null;
   card: { id: string; bank_name: string; last_four_digits: string; tag: string | null; card_mode: CardMode } | null;
+  recurring_transaction_id: string | null;
+  installment_number: number | null;
   created_at: string;
 }
 
@@ -234,6 +236,80 @@ export interface CreateCardRequest {
   card_mode: CardMode;
   last_4_digits: string;
   tag?: string;
+}
+
+export interface UpdateCardRequest {
+  bank_name?: string;
+  card_type?: CardType;
+  card_mode?: CardMode;
+  last_4_digits?: string;
+  tag?: string;
+}
+
+// ============ Recurring Transaction Types ============
+
+export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly';
+
+export interface RecurringTransaction {
+  id: string;
+  group_id: string;
+  user_id: string;
+  type: TransactionType;
+  description: string | null;
+  merchant_name: string | null;
+  amount: number;
+  currency: Currency;
+  category_id: string;
+  payment_method: PaymentMethod;
+  card_id: string | null;
+  frequency: RecurringFrequency;
+  interval: number;
+  day_of_month: number | null;
+  start_date: string;
+  end_date: string | null;
+  next_execution_date: string;
+  last_execution_date: string | null;
+  is_active: boolean;
+  total_installments: number | null;
+  current_installment: number | null;
+  original_amount: number | null;
+  created_at: string;
+  updated_at: string;
+  category?: Category;
+  card?: CreditCard | null;
+}
+
+export interface CreateRecurringTransactionRequest {
+  description: string;
+  merchant_name?: string;
+  amount: number;
+  currency: Currency;
+  category_id: string;
+  type?: TransactionType;
+  payment_method?: PaymentMethod;
+  card_id?: string;
+  frequency: RecurringFrequency;
+  interval?: number;
+  day_of_month?: number;
+  start_date: string;
+  end_date?: string;
+  total_installments?: number;
+  original_amount?: number;
+}
+
+export interface UpdateRecurringTransactionRequest {
+  description?: string;
+  merchant_name?: string;
+  amount?: number;
+  currency?: Currency;
+  category_id?: string;
+  payment_method?: PaymentMethod;
+  card_id?: string;
+  frequency?: RecurringFrequency;
+  interval?: number;
+  day_of_month?: number;
+  end_date?: string;
+  is_active?: boolean;
 }
 
 // ============ Statement Types ============

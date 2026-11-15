@@ -436,6 +436,63 @@ class ApiClient {
     return response.data;
   }
 
+  async updateCard(cardId: string, data: { bank_name?: string; card_type?: string; card_mode?: string; last_4_digits?: string; tag?: string }) {
+    const response = await this.client.patch(`/cards/${cardId}`, data);
+    return response.data;
+  }
+
+  async deleteCard(cardId: string) {
+    const response = await this.client.delete(`/cards/${cardId}`);
+    return response.data;
+  }
+
+  // ============ Recurring Transaction API ============
+  async getRecurringTransactions() {
+    const response = await this.client.get('/recurring-transactions');
+    return response.data ?? [];
+  }
+
+  async createRecurringTransaction(data: {
+    description: string;
+    merchant_name?: string;
+    amount: number;
+    currency: string;
+    category_id: string;
+    type?: string;
+    payment_method?: string;
+    card_id?: string;
+    frequency: string;
+    interval?: number;
+    day_of_month?: number;
+    start_date: string;
+    end_date?: string;
+    total_installments?: number;
+    original_amount?: number;
+  }) {
+    const response = await this.client.post('/recurring-transactions', data);
+    return response.data;
+  }
+
+  async updateRecurringTransaction(id: string, data: Record<string, unknown>) {
+    const response = await this.client.patch(`/recurring-transactions/${id}`, data);
+    return response.data;
+  }
+
+  async deleteRecurringTransaction(id: string) {
+    const response = await this.client.delete(`/recurring-transactions/${id}`);
+    return response.data;
+  }
+
+  async pauseRecurringTransaction(id: string) {
+    const response = await this.client.post(`/recurring-transactions/${id}/pause`);
+    return response.data;
+  }
+
+  async resumeRecurringTransaction(id: string) {
+    const response = await this.client.post(`/recurring-transactions/${id}/resume`);
+    return response.data;
+  }
+
   // ============ Statement API ============
 
   async uploadStatement(cardId: string, file: File, password?: string) {

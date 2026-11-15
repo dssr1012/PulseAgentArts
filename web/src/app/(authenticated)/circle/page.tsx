@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { formatDate, getTimeUntilExpiry, cn, CURRENCIES } from '@/lib/utils';
 import type { FamilyCircle, CircleDetail, CircleMember, Invitation, Currency } from '@/types';
@@ -29,6 +30,7 @@ import {
 export default function CirclePage() {
   const { user, activeCircleId, setActiveCircle, refreshCircles } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const [circleDetail, setCircleDetail] = useState<CircleDetail | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -65,11 +67,11 @@ export default function CirclePage() {
         setInvitations([]);
       }
     } catch {
-      addToast('error', 'Failed to load circle data.');
+      addToast('error', t('circle.loadFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, addToast]);
+  }, [activeCircleId, addToast, t]);
 
   useEffect(() => { fetchCircle(); }, [fetchCircle]);
 
@@ -78,7 +80,7 @@ export default function CirclePage() {
     setIsCreating(true);
     try {
       await apiClient.createCircle({ name: circleName, base_currency: baseCurrency });
-      addToast('success', 'Family Circle created! You are now the administrator.');
+      addToast('success', t('circle.createdSuccess'));
       setShowCreateModal(false);
       setCircleName('');
       // Refresh user to get updated circles list
@@ -86,7 +88,7 @@ export default function CirclePage() {
       // The new circle will be picked up from the updated user.circles
       fetchCircle();
     } catch {
-      addToast('error', 'Failed to create circle.');
+      addToast('error', t('circle.createFailed'));
     } finally {
       setIsCreating(false);
     }
@@ -98,16 +100,16 @@ export default function CirclePage() {
     setIsInviting(true);
     try {
       await apiClient.sendInvitation(activeCircleId, inviteEmail);
-      addToast('success', `Invitation sent to ${inviteEmail}`);
+      addToast('success', `${t('circle.invitationSent')} ${inviteEmail}`);
       setShowInviteModal(false);
       setInviteEmail('');
       fetchCircle();
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'INVITE_ALREADY_MEMBER') {
-        addToast('warning', 'This email is already a member of this circle.');
+        addToast('warning', t('circle.alreadyMember'));
       } else {
-        addToast('error', 'Failed to send invitation.');
+        addToast('error', t('circle.inviteFailed'));
       }
     } finally {
       setIsInviting(false);
@@ -115,13 +117,13 @@ export default function CirclePage() {
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!activeCircleId || !confirm('Remove this member from the circle?')) return;
+    if (!activeCircleId || !confirm(t('circle.confirmRemove'))) return;
     try {
       await apiClient.removeMember(activeCircleId, userId);
-      addToast('success', 'Member removed.');
+      addToast('success', t('circle.memberRemoved'));
       fetchCircle();
     } catch {
-      addToast('error', 'Failed to remove member.');
+      addToast('error', t('circle.removeFailed'));
     }
   };
 
@@ -130,11 +132,11 @@ export default function CirclePage() {
     setIsDeleting(true);
     try {
       await apiClient.deleteCircle(activeCircleId);
-      addToast('success', 'Circle deleted successfully.');
+      addToast('success', t('circle.deletedSuccess'));
       setShowDeleteModal(false);
       await refreshCircles();
     } catch {
-      addToast('error', 'Failed to delete circle.');
+      addToast('error', t('circle.deleteFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -144,10 +146,10 @@ export default function CirclePage() {
     if (!activeCircleId) return;
     try {
       await apiClient.updateCircleCurrency(activeCircleId, newCurrency);
-      addToast('success', 'Base currency updated.');
+      addToast('success', t('circle.currencyUpdated'));
       fetchCircle();
     } catch {
-      addToast('error', 'Failed to update currency.');
+      addToast('error', t('circle.currencyUpdateFailed'));
     }
   };
 
@@ -161,7 +163,7 @@ export default function CirclePage() {
       <div className="flex items-center justify-between gap-4">
         {circles.length > 0 && (
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Circle:</label>
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">{t('circle.circleLabel')}</label>
             <select
               value={activeCircleId ?? ''}
               onChange={(e) => setActiveCircle(e.target.value)}
@@ -169,7 +171,7 @@ export default function CirclePage() {
             >
               {circles.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} {c.role === 'admin' ? '(Admin)' : ''}
+                  {c.name} {c.role === 'admin' ? `(${t('common.admin')})` : ''}
                 </option>
               ))}
             </select>
@@ -177,7 +179,7 @@ export default function CirclePage() {
         )}
         <button onClick={() => setShowCreateModal(true)} className="btn-secondary flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">New Circle</span>
+          <span className="hidden sm:inline">{t('circle.newCircle')}</span>
         </button>
       </div>
 
@@ -186,9 +188,9 @@ export default function CirclePage() {
         <div className="max-w-lg mx-auto">
           <EmptyState
             icon={<Users className="h-12 w-12" />}
-            title="No Family Circle yet"
-            description="Create a Family Circle to start sharing expenses with your family members."
-            action={{ label: 'Create Circle', onClick: () => setShowCreateModal(true) }}
+            title={t('circle.noCircle')}
+            description={t('circle.noCircleDesc')}
+            action={{ label: t('circle.createCircle'), onClick: () => setShowCreateModal(true) }}
           />
         </div>
       ) : (
@@ -203,8 +205,8 @@ export default function CirclePage() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">{circleDetail.circle.name}</h1>
                   <p className="text-sm text-gray-500 mt-1">
-                    {circleDetail.members.length} member{circleDetail.members.length !== 1 ? 's' : ''} •
-                    Created {formatDate(circleDetail.circle.created_at)}
+                    {circleDetail.members.length} {circleDetail.members.length !== 1 ? t('circle.membersPlural') : t('circle.member')} •
+                    {t('circle.created')} {formatDate(circleDetail.circle.created_at)}
                   </p>
                 </div>
               </div>
@@ -216,11 +218,11 @@ export default function CirclePage() {
                     aria-label="Delete circle"
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Delete</span>
+                    <span className="hidden sm:inline">{t('common.delete')}</span>
                   </button>
                   <button onClick={() => setShowInviteModal(true)} className="btn-primary flex items-center gap-2">
                     <Send className="h-4 w-4" />
-                    <span className="hidden sm:inline">Invite</span>
+                    <span className="hidden sm:inline">{t('circle.invite')}</span>
                   </button>
                 </div>
               )}
@@ -230,7 +232,7 @@ export default function CirclePage() {
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="flex items-center gap-3">
                 <Globe className="h-5 w-5 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">Base Currency:</span>
+                <span className="text-sm font-medium text-gray-700">{t('circle.baseCurrency')}</span>
                 {isAdmin ? (
                   <select
                     value={circleDetail.circle.base_currency}
@@ -250,7 +252,7 @@ export default function CirclePage() {
 
           {/* Members */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Members</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('circle.members')}</h2>
             <div className="space-y-3">
               {circleDetail.members.map((member) => (
                 <div key={member.user_id} className="card p-4 flex items-center justify-between">
@@ -265,11 +267,11 @@ export default function CirclePage() {
                         <p className="text-sm font-medium text-gray-900">{member.given_name}</p>
                         {member.role === 'admin' && (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-pulse-yellow-600 bg-pulse-yellow-100 px-2 py-0.5 rounded-full">
-                            <Crown className="h-3 w-3" /> Admin
+                            <Crown className="h-3 w-3" /> {t('common.admin')}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500">{member.email} • Joined {formatDate(member.joined_at)}</p>
+                      <p className="text-xs text-gray-500">{member.email} • {t('circle.joined')} {formatDate(member.joined_at)}</p>
                     </div>
                   </div>
                   {isAdmin && member.role !== 'admin' && (
@@ -289,7 +291,7 @@ export default function CirclePage() {
           {/* Invitations (admin only) */}
           {isAdmin && invitations.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Pending Invitations</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('circle.pendingInvitations')}</h2>
               <div className="space-y-3">
                 {invitations.map((inv) => (
                   <div key={inv.id} className="card p-4 flex items-center justify-between">
@@ -302,27 +304,27 @@ export default function CirclePage() {
                         <div className="flex items-center gap-2 mt-0.5">
                           {inv.status === 'pending' && (
                             <span className="flex items-center gap-1 text-xs text-pulse-yellow-600">
-                              <Clock className="h-3 w-3" /> Pending • Expires in {getTimeUntilExpiry(inv.expires_at)}
+                              <Clock className="h-3 w-3" /> {t('common.pending')} • {t('circle.expiresIn')} {getTimeUntilExpiry(inv.expires_at)}
                             </span>
                           )}
                           {inv.status === 'sent' && (
                             <span className="flex items-center gap-1 text-xs text-pulse-blue-600">
-                              <Send className="h-3 w-3" /> Sent
+                              <Send className="h-3 w-3" /> {t('common.sent')}
                             </span>
                           )}
                           {inv.status === 'accepted' && (
                             <span className="flex items-center gap-1 text-xs text-pulse-emerald-600">
-                              <CheckCircle className="h-3 w-3" /> Accepted
+                              <CheckCircle className="h-3 w-3" /> {t('common.accepted')}
                             </span>
                           )}
                           {inv.status === 'expired' && (
                             <span className="flex items-center gap-1 text-xs text-gray-500">
-                              <XCircle className="h-3 w-3" /> Expired
+                              <XCircle className="h-3 w-3" /> {t('common.expired')}
                             </span>
                           )}
                           {inv.status === 'delivery_failed' && (
                             <span className="flex items-center gap-1 text-xs text-pulse-red-600">
-                              <AlertCircle className="h-3 w-3" /> Delivery Failed
+                              <AlertCircle className="h-3 w-3" /> {t('common.deliveryFailed')}
                             </span>
                           )}
                         </div>
@@ -337,10 +339,10 @@ export default function CirclePage() {
       )}
 
       {/* Create Circle Modal */}
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create Family Circle" size="sm">
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title={t('circle.createFamilyCircle')} size="sm">
         <form onSubmit={handleCreateCircle} className="space-y-4">
           <div>
-            <label htmlFor="circleName" className="label-field">Circle Name</label>
+            <label htmlFor="circleName" className="label-field">{t('circle.circleName')}</label>
             <input
               id="circleName"
               type="text"
@@ -353,7 +355,7 @@ export default function CirclePage() {
             />
           </div>
           <div>
-            <label htmlFor="baseCurrency" className="label-field">Base Currency</label>
+            <label htmlFor="baseCurrency" className="label-field">{t('circle.baseCurrency').replace(':', '')}</label>
             <select
               id="baseCurrency"
               value={baseCurrency}
@@ -361,24 +363,24 @@ export default function CirclePage() {
               className="select-field"
             >
               {CURRENCIES.map((c) => (
-                <option key={c} value={c}>{c} ({c === 'ARS' ? 'Argentine Peso' : c === 'USD' ? 'US Dollar' : 'Euro'})</option>
+                <option key={c} value={c}>{c} ({c === 'ARS' ? t('circle.argentinePeso') : c === 'USD' ? t('circle.usDollar') : t('circle.euro')})</option>
               ))}
             </select>
           </div>
           <div className="flex items-center justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowCreateModal(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={() => setShowCreateModal(false)} className="btn-secondary">{t('common.cancel')}</button>
             <button type="submit" disabled={isCreating} className="btn-primary">
-              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Circle'}
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('circle.createCircle')}
             </button>
           </div>
         </form>
       </Modal>
 
       {/* Invite Modal */}
-      <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title="Send Invitation" size="sm">
+      <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title={t('circle.sendInvitation')} size="sm">
         <form onSubmit={handleSendInvitation} className="space-y-4">
           <div>
-            <label htmlFor="inviteEmail" className="label-field">Email Address</label>
+            <label htmlFor="inviteEmail" className="label-field">{t('circle.emailAddress')}</label>
             <input
               id="inviteEmail"
               type="email"
@@ -389,34 +391,32 @@ export default function CirclePage() {
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              The invitation will expire after 72 hours.
+              {t('circle.invitationExpires')}
             </p>
           </div>
           <div className="flex items-center justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowInviteModal(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={() => setShowInviteModal(false)} className="btn-secondary">{t('common.cancel')}</button>
             <button type="submit" disabled={isInviting} className="btn-primary flex items-center gap-2">
-              {isInviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4" /> Send</>}
+              {isInviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4" /> {t('circle.send')}</>}
             </button>
           </div>
         </form>
       </Modal>
 
       {/* Delete Circle Modal */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Family Circle" size="sm">
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={t('circle.deleteFamilyCircle')} size="sm">
         <div className="space-y-4">
           <div className="flex items-start gap-3 p-3 rounded-lg bg-pulse-red-50 border border-pulse-red-100">
             <AlertCircle className="h-5 w-5 text-pulse-red-500 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-pulse-red-800">
-              <p className="font-semibold mb-1">This action cannot be undone.</p>
+              <p className="font-semibold mb-1">{t('common.thisActionCannotBeUndone')}</p>
               <p>
-                Deleting <strong>{circleDetail?.circle.name}</strong> will permanently remove all
-                members, invitations, transactions, categories, cards, and statements associated with
-                this circle.
+                {t('circle.deleteCircleWarning')} <strong>{circleDetail?.circle.name}</strong> {t('circle.deleteCircleWarning2')}
               </p>
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowDeleteModal(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={() => setShowDeleteModal(false)} className="btn-secondary">{t('common.cancel')}</button>
             <button
               type="button"
               onClick={handleDeleteCircle}
@@ -424,7 +424,7 @@ export default function CirclePage() {
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pulse-red-600 text-white font-medium hover:bg-pulse-red-700 transition-colors disabled:opacity-50"
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Delete Circle
+              {t('circle.deleteCircleBtn')}
             </button>
           </div>
         </div>

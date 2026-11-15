@@ -20,9 +20,15 @@ export function formatCurrency(amount: number, currency: string): string {
   }).format(amount);
 }
 
+function getDateLocale(): string {
+  if (typeof window === 'undefined') return 'es-AR';
+  const lang = localStorage.getItem('preferred_language');
+  return lang === 'en' ? 'en-US' : 'es-AR';
+}
+
 export function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('es-AR', {
+  return new Intl.DateTimeFormat(getDateLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -31,7 +37,7 @@ export function formatDate(date: string | Date): string {
 
 export function formatDateTime(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('es-AR', {
+  return new Intl.DateTimeFormat(getDateLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -54,7 +60,12 @@ export function getTimeUntilExpiry(expiresAt: string): string {
   const expiry = new Date(expiresAt);
   const diff = expiry.getTime() - now.getTime();
 
-  if (diff <= 0) return 'Expirada';
+  if (diff <= 0) {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('preferred_language') === 'en' ? 'Expired' : 'Expirada';
+    }
+    return 'Expirada';
+  }
 
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));

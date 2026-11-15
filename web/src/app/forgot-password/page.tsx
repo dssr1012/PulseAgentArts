@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -19,9 +21,9 @@ export default function ForgotPasswordPage() {
     try {
       await apiClient.forgotPassword(email);
       setSent(true);
-      addToast('success', 'If the email exists, a temporary password has been sent.');
+      addToast('success', t('forgotPassword.success'));
     } catch {
-      addToast('error', 'Failed to request password reset. Please try again.');
+      addToast('error', t('forgotPassword.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -34,8 +36,8 @@ export default function ForgotPasswordPage() {
           <div className="h-14 w-14 rounded-2xl bg-pulse-blue-500 flex items-center justify-center shadow-lg mb-4">
             <span className="text-white font-bold text-2xl">P</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
-          <p className="text-sm text-gray-500 mt-1">Enter your email to receive a temporary password</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('forgotPassword.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('forgotPassword.subtitle')}</p>
         </div>
 
         <div className="card">
@@ -43,18 +45,17 @@ export default function ForgotPasswordPage() {
             <div className="text-center py-4">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
               <p className="text-sm text-gray-700 mb-2">
-                If an account exists for <span className="font-semibold">{email}</span>,
-                a temporary password has been sent to that email address.
+                {t('forgotPassword.sentMessage1')} <span className="font-semibold">{email}</span>,
+                {t('forgotPassword.sentMessage2')}
               </p>
               <p className="text-sm text-gray-500">
-                Please check your inbox and use the temporary password to log in.
-                You will be asked to change it immediately.
+                {t('forgotPassword.sentMessage3')}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="email" className="label-field">Email address</label>
+                <label htmlFor="email" className="label-field">{t('forgotPassword.emailAddress')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
@@ -72,9 +73,9 @@ export default function ForgotPasswordPage() {
 
               <button type="submit" disabled={isLoading} className="btn-primary w-full">
                 {isLoading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Sending...</>
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('forgotPassword.sending')}</>
                 ) : (
-                  'Send temporary password'
+                  t('forgotPassword.sendBtn')
                 )}
               </button>
             </form>
@@ -82,7 +83,7 @@ export default function ForgotPasswordPage() {
 
           <p className="mt-6 text-center text-sm text-gray-500">
             <Link href="/login" className="inline-flex items-center gap-1 font-semibold text-pulse-blue-500 hover:text-pulse-blue-600">
-              <ArrowLeft className="h-3 w-3" /> Back to login
+              <ArrowLeft className="h-3 w-3" /> {t('forgotPassword.backToLogin')}
             </Link>
           </p>
         </div>

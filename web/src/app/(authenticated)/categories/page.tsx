@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
+import { useTranslation, useCategoryName } from '@/i18n';
 import type { Category } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { LoadingOverlay } from '@/components/ui/Spinner';
@@ -15,6 +16,8 @@ export default function CategoriesPage() {
   const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
   const router = useRouter();
+  const { t } = useTranslation();
+  const categoryName = useCategoryName();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,12 +37,12 @@ export default function CategoriesPage() {
       if (error.code === 'CIRCLE_NOT_FOUND') {
         router.replace('/circle');
       } else {
-        addToast('error', 'Failed to load categories.');
+        addToast('error', t('categories.loadFailed'));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, addToast, router]);
+  }, [activeCircleId, addToast, router, t]);
 
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
@@ -48,7 +51,7 @@ export default function CategoriesPage() {
     setIsCreating(true);
     try {
       await apiClient.createCategory(activeCircleId, { name: newCategoryName.trim(), icon: newCategoryIcon || undefined });
-      addToast('success', 'Category created.');
+      addToast('success', t('categories.created'));
       setShowAddModal(false);
       setNewCategoryName('');
       setNewCategoryIcon('');
@@ -56,9 +59,9 @@ export default function CategoriesPage() {
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'CATEGORY_DUPLICATE') {
-        addToast('warning', 'A category with this name already exists.');
+        addToast('warning', t('categories.duplicate'));
       } else {
-        addToast('error', 'Failed to create category.');
+        addToast('error', t('categories.createFailed'));
       }
     } finally {
       setIsCreating(false);
@@ -67,20 +70,20 @@ export default function CategoriesPage() {
 
   const handleDelete = async (id: string, isDefault: boolean) => {
     if (isDefault) {
-      addToast('warning', 'Default categories cannot be deleted.');
+      addToast('warning', t('categories.cannotDeleteDefault'));
       return;
     }
-    if (!confirm('Delete this category?')) return;
+    if (!confirm(t('categories.confirmDelete'))) return;
     try {
       await apiClient.deleteCategory(id);
-      addToast('success', 'Category deleted.');
+      addToast('success', t('categories.deleted'));
       fetchCategories();
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'CATEGORY_IN_USE') {
-        addToast('warning', 'This category is in use by existing expenses and cannot be deleted.');
+        addToast('warning', t('categories.inUse'));
       } else {
-        addToast('error', 'Failed to delete category.');
+        addToast('error', t('categories.deleteFailed'));
       }
     }
   };
@@ -92,11 +95,11 @@ export default function CategoriesPage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage expense categories</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('categories.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('categories.subtitle')}</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Add Category
+          <Plus className="h-4 w-4" /> {t('categories.addCategory')}
         </button>
       </div>
 
@@ -106,7 +109,7 @@ export default function CategoriesPage() {
         <>
           {/* Default Categories */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Default Categories</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('categories.defaultCategories')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {defaultCategories.map((cat) => (
                 <div key={cat.id} className="card p-4 flex items-center gap-3">
@@ -114,8 +117,8 @@ export default function CategoriesPage() {
                     <Tag className="h-5 w-5 text-pulse-blue-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                    <p className="text-xs text-gray-500">Default</p>
+                    <p className="text-sm font-medium text-gray-900">{categoryName(cat.name)}</p>
+                    <p className="text-xs text-gray-500">{t('common.default')}</p>
                   </div>
                 </div>
               ))}
@@ -124,9 +127,9 @@ export default function CategoriesPage() {
 
           {/* Custom Categories */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Custom Categories</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('categories.customCategories')}</h2>
             {customCategories.length === 0 ? (
-              <p className="text-sm text-gray-500">No custom categories yet.</p>
+              <p className="text-sm text-gray-500">{t('categories.noCustom')}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {customCategories.map((cat) => (
@@ -136,7 +139,7 @@ export default function CategoriesPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                      <p className="text-xs text-gray-500">Custom</p>
+                      <p className="text-xs text-gray-500">{t('common.custom')}</p>
                     </div>
                     <button
                       onClick={() => handleDelete(cat.id, cat.is_default)}
@@ -154,36 +157,36 @@ export default function CategoriesPage() {
       )}
 
       {/* Add Category Modal */}
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Custom Category" size="sm">
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title={t('categories.addCustomTitle')} size="sm">
         <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
           <div>
-            <label htmlFor="catName" className="label-field">Category Name</label>
+            <label htmlFor="catName" className="label-field">{t('categories.categoryName')}</label>
             <input
               id="catName"
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               className="input-field"
-              placeholder="e.g., Entertainment"
+              placeholder={t('categories.categoryNamePlaceholder')}
               maxLength={50}
               required
             />
           </div>
           <div>
-            <label htmlFor="catIcon" className="label-field">Icon (optional)</label>
+            <label htmlFor="catIcon" className="label-field">{t('categories.iconOptional')}</label>
             <input
               id="catIcon"
               type="text"
               value={newCategoryIcon}
               onChange={(e) => setNewCategoryIcon(e.target.value)}
               className="input-field"
-              placeholder="Icon identifier"
+              placeholder={t('categories.iconPlaceholder')}
             />
           </div>
           <div className="flex items-center justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">{t('common.cancel')}</button>
             <button type="submit" disabled={isCreating || !newCategoryName.trim()} className="btn-primary">
-              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.create')}
             </button>
           </div>
         </form>

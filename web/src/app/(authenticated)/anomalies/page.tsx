@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import type { AnomalyAlert, AnomalySeverity } from '@/types';
@@ -24,6 +25,7 @@ import {
 export default function AnomaliesPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [alerts, setAlerts] = useState<AnomalyAlert[]>([]);
@@ -49,32 +51,31 @@ export default function AnomaliesPage() {
       if (error.code === 'CIRCLE_NOT_FOUND') {
         router.replace('/circle');
       } else {
-        addToast('error', 'Failed to load anomaly alerts.');
+        addToast('error', t('anomalies.loadFailed'));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [page, severityFilter, addToast, router]);
+  }, [page, severityFilter, addToast, router, t]);
 
   useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
   const handleAssociate = async (expenseId: string) => {
     try {
-      // In a real app, we'd show a modal to select the statement item
-      addToast('info', 'Select the matching statement item to associate.');
+      addToast('info', t('anomalies.associateHint'));
     } catch {
-      addToast('error', 'Failed to associate expense.');
+      addToast('error', t('anomalies.associateFailed'));
     }
   };
 
   const handleDiscard = async (expenseId: string) => {
-    if (!confirm('Discard this flagged expense?')) return;
+    if (!confirm(t('anomalies.confirmDiscard'))) return;
     try {
       await apiClient.discardExpense(expenseId);
-      addToast('success', 'Expense discarded and alert resolved.');
+      addToast('success', t('anomalies.discarded'));
       fetchAlerts();
     } catch {
-      addToast('error', 'Failed to discard expense.');
+      addToast('error', t('anomalies.discardFailed'));
     }
   };
 
@@ -82,9 +83,9 @@ export default function AnomaliesPage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Anomaly Alerts</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('anomalies.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {total} irregular expense{total !== 1 ? 's' : ''} detected
+            {total} {total !== 1 ? t('anomalies.irregularExpensesPlural') : t('anomalies.irregularExpenses')} {t('anomalies.detected')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -92,19 +93,19 @@ export default function AnomaliesPage() {
             onClick={() => setSeverityFilter('')}
             className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors', !severityFilter ? 'bg-pulse-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}
           >
-            All
+            {t('anomalies.all')}
           </button>
           <button
             onClick={() => setSeverityFilter('alert')}
             className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors', severityFilter === 'alert' ? 'bg-pulse-yellow-400 text-gray-900' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}
           >
-            ⚠️ Alerts
+            {t('anomalies.alerts')}
           </button>
           <button
             onClick={() => setSeverityFilter('critical')}
             className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors', severityFilter === 'critical' ? 'bg-pulse-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}
           >
-            🔴 Critical
+            {t('anomalies.critical')}
           </button>
         </div>
       </div>
@@ -114,8 +115,8 @@ export default function AnomaliesPage() {
       ) : alerts.length === 0 ? (
         <EmptyState
           icon={<Shield className="h-12 w-12" />}
-          title="No anomalies detected"
-          description="All expenses match their statements. Great job!"
+          title={t('anomalies.noAnomalies')}
+          description={t('anomalies.noAnomaliesDesc')}
         />
       ) : (
         <div className="space-y-4">
@@ -130,7 +131,6 @@ export default function AnomaliesPage() {
               )}
             >
               <div className="flex items-start gap-4">
-                {/* Severity icon */}
                 <div
                   className={cn(
                     'h-10 w-10 rounded-full flex items-center justify-center shrink-0',
@@ -146,19 +146,18 @@ export default function AnomaliesPage() {
                   )}
                 </div>
 
-                {/* Details */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant={alert.severity === 'critical' ? 'danger' : 'warning'}>
-                      {alert.severity === 'critical' ? 'Critical' : 'Alert'}
+                      {alert.severity === 'critical' ? t('anomalies.criticalBadge') : t('anomalies.alertBadge')}
                     </Badge>
                     <Badge variant="default">
-                      {alert.reason === 'amount_discrepancy' ? 'Amount Discrepancy' : 'Orphaned Duplicate'}
+                      {alert.reason === 'amount_discrepancy' ? t('anomalies.amountDiscrepancy') : t('anomalies.orphanedDuplicate')}
                     </Badge>
                   </div>
 
                   <p className="text-sm font-medium text-gray-900">
-                    {alert.expense.description || alert.expense.merchant_name || 'Unnamed expense'}
+                    {alert.expense.description || alert.expense.merchant_name || t('common.unnamedExpense')}
                   </p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
                     <span>{formatCurrency(alert.expense.amount, alert.expense.currency)}</span>
@@ -170,16 +169,15 @@ export default function AnomaliesPage() {
 
                   {alert.reason === 'amount_discrepancy' && (
                     <p className="text-xs text-pulse-yellow-700 mt-2">
-                      Same merchant and date found in statement, but amounts differ.
+                      {t('anomalies.amountDiscrepancyDesc')}
                     </p>
                   )}
                   {alert.reason === 'orphaned_duplicate' && (
                     <p className="text-xs text-pulse-red-700 mt-2">
-                      No matching statement entry found after 30 days.
+                      {t('anomalies.orphanedDuplicateDesc')}
                     </p>
                   )}
 
-                  {/* Quick Actions */}
                   <div className="flex items-center gap-2 mt-3">
                     {(alert.available_actions || []).includes('associate') && (
                       <button
@@ -187,7 +185,7 @@ export default function AnomaliesPage() {
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-pulse-blue-50 text-pulse-blue-600 hover:bg-pulse-blue-100 transition-colors"
                       >
                         <Link2 className="h-3.5 w-3.5" />
-                        Associate
+                        {t('anomalies.associate')}
                       </button>
                     )}
                     {(alert.available_actions || []).includes('edit') && (
@@ -195,7 +193,7 @@ export default function AnomaliesPage() {
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
-                        Edit
+                        {t('common.edit')}
                       </button>
                     )}
                     {(alert.available_actions || []).includes('discard') && (
@@ -204,7 +202,7 @@ export default function AnomaliesPage() {
                         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-pulse-red-50 text-pulse-red-600 hover:bg-pulse-red-100 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        Discard
+                        {t('anomalies.discard')}
                       </button>
                     )}
                   </div>
@@ -213,9 +211,8 @@ export default function AnomaliesPage() {
             </div>
           ))}
 
-          {/* Pagination */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Page {page} of {totalPages}</p>
+            <p className="text-sm text-gray-500">{t('common.page')} {page} {t('common.of')} {totalPages}</p>
             <div className="flex items-center gap-2">
               <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="btn-ghost disabled:opacity-50">
                 <ChevronLeft className="h-4 w-4" />

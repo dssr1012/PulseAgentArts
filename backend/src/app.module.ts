@@ -16,6 +16,7 @@ import { NotificationModule } from './notification/notification.module';
 import { RegexDictModule } from './regex-dict/regex-dict.module';
 import { AuditModule } from './audit/audit.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { RecurringModule } from './recurring/recurring.module';
 import { CommonModule } from './common/common.module';
 import { LoggerModule } from './common/logger/logger.module';
 
@@ -26,7 +27,7 @@ import { LoggerModule } from './common/logger/logger.module';
       envFilePath: ['.env', '../.env'],
     }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 200 }]),
     LoggerModule,
     CommonModule,
     AuthModule,
@@ -42,6 +43,7 @@ import { LoggerModule } from './common/logger/logger.module';
     RegexDictModule,
     AuditModule,
     WhatsappModule,
+    RecurringModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

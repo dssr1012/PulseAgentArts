@@ -14,13 +14,15 @@ import {
   AlertTriangle,
   Settings,
   LogOut,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
   badge?: number;
 }
@@ -29,24 +31,26 @@ export function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const navItems: NavItem[] = [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { href: '/transactions', label: 'Transactions', icon: <Receipt className="h-5 w-5" /> },
-    { href: '/incomes', label: 'Incomes', icon: <TrendingUp className="h-5 w-5" /> },
-    { href: '/cards', label: 'Cards', icon: <CreditCard className="h-5 w-5" /> },
-    { href: '/circle', label: 'Family Circle', icon: <Users className="h-5 w-5" /> },
-    { href: '/categories', label: 'Categories', icon: <Tag className="h-5 w-5" /> },
-    { href: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="h-5 w-5" />, badge: 0 },
-    { href: '/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
+    { href: '/dashboard', labelKey: 'nav.dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { href: '/transactions', labelKey: 'nav.transactions', icon: <Receipt className="h-5 w-5" /> },
+    { href: '/incomes', labelKey: 'nav.incomes', icon: <TrendingUp className="h-5 w-5" /> },
+    { href: '/cards', labelKey: 'nav.cards', icon: <CreditCard className="h-5 w-5" /> },
+    { href: '/recurring', labelKey: 'nav.recurring', icon: <RefreshCw className="h-5 w-5" /> },
+    { href: '/circle', labelKey: 'nav.familyCircle', icon: <Users className="h-5 w-5" /> },
+    { href: '/categories', labelKey: 'nav.categories', icon: <Tag className="h-5 w-5" /> },
+    { href: '/anomalies', labelKey: 'nav.anomalies', icon: <AlertTriangle className="h-5 w-5" />, badge: 0 },
+    { href: '/settings', labelKey: 'nav.settings', icon: <Settings className="h-5 w-5" /> },
   ];
 
   const handleLogout = async () => {
     try {
       await logout();
-      addToast('success', 'Logged out successfully');
+      addToast('success', t('settings.loggedOut'));
     } catch {
-      addToast('error', 'Failed to logout');
+      addToast('error', t('settings.logoutFailed'));
     }
   };
 
@@ -59,7 +63,7 @@ export function Sidebar() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">PulseExpends</h1>
-          <p className="text-xs text-gray-500">Family Expenses</p>
+          <p className="text-xs text-gray-500">{t('nav.familyExpenses')}</p>
         </div>
       </div>
 
@@ -80,7 +84,7 @@ export function Sidebar() {
               aria-current={isActive ? 'page' : undefined}
             >
               <span className={cn(isActive && 'text-white')}>{item.icon}</span>
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1">{t(item.labelKey)}</span>
               {item.badge !== undefined && item.badge > 0 && (
                 <span
                   className={cn(
@@ -117,7 +121,7 @@ export function Sidebar() {
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-pulse-red-50 hover:text-pulse-red-600 transition-colors flex-1"
           >
             <LogOut className="h-5 w-5" />
-            <span>Logout</span>
+            <span>{t('common.logout')}</span>
           </button>
         </div>
       </div>
@@ -127,13 +131,14 @@ export function Sidebar() {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   const navItems: NavItem[] = [
-    { href: '/dashboard', label: 'Home', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { href: '/transactions', label: 'Expenses', icon: <Receipt className="h-5 w-5" /> },
-    { href: '/cards', label: 'Cards', icon: <CreditCard className="h-5 w-5" /> },
-    { href: '/circle', label: 'Circle', icon: <Users className="h-5 w-5" /> },
-    { href: '/anomalies', label: 'Alerts', icon: <AlertTriangle className="h-5 w-5" /> },
+    { href: '/dashboard', labelKey: 'nav.home', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { href: '/transactions', labelKey: 'nav.expenses', icon: <Receipt className="h-5 w-5" /> },
+    { href: '/cards', labelKey: 'nav.cards', icon: <CreditCard className="h-5 w-5" /> },
+    { href: '/circle', labelKey: 'nav.circle', icon: <Users className="h-5 w-5" /> },
+    { href: '/anomalies', labelKey: 'nav.alerts', icon: <AlertTriangle className="h-5 w-5" /> },
   ];
 
   return (
@@ -157,7 +162,7 @@ export function BottomNav() {
               aria-current={isActive ? 'page' : undefined}
             >
               <span className={cn(isActive && 'text-pulse-blue-500')}>{item.icon}</span>
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
               {item.badge !== undefined && item.badge > 0 && (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-pulse-yellow-400 text-gray-900 h-4 w-4 text-[10px] font-bold">
                   {item.badge}
@@ -174,16 +179,17 @@ export function BottomNav() {
 export function MobileHeader() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
-  const pageTitles: Record<string, string> = {
-    '/dashboard': 'Dashboard',
-    '/transactions': 'Transactions',
-    '/incomes': 'Incomes',
-    '/cards': 'Cards & Statements',
-    '/circle': 'Family Circle',
-    '/categories': 'Categories',
-    '/anomalies': 'Anomaly Alerts',
-    '/settings': 'Settings',
+  const pageTitleMap: Record<string, string> = {
+    '/dashboard': 'nav.dashboard',
+    '/transactions': 'nav.transactions',
+    '/incomes': 'nav.incomes',
+    '/cards': 'nav.cardsStatements',
+    '/circle': 'nav.familyCircle',
+    '/categories': 'nav.categories',
+    '/anomalies': 'nav.anomalyAlerts',
+    '/settings': 'nav.settings',
   };
 
   return (
@@ -194,7 +200,7 @@ export function MobileHeader() {
             <span className="text-white font-bold text-sm">P</span>
           </div>
           <h1 className="text-base font-semibold text-gray-900">
-            {pageTitles[pathname] || 'PulseExpends'}
+            {pageTitleMap[pathname] ? t(pageTitleMap[pathname]) : 'PulseExpends'}
           </h1>
         </div>
         <div className="flex items-center gap-2">

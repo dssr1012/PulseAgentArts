@@ -1,7 +1,7 @@
-import { Controller, Post, Get, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CardService } from './card.service';
-import { CreateCardDto } from './dto/card.dto';
+import { CreateCardDto, UpdateCardDto } from './dto/card.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -27,6 +27,16 @@ export class CardController {
   @ApiOperation({ summary: 'List credit cards for your circle' })
   async listCards(@CurrentUser('circleId') circleId: string) {
     return this.cardService.listCards(circleId);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a credit card' })
+  async updateCard(
+    @Param('id') cardId: string,
+    @Body() dto: UpdateCardDto,
+    @CurrentUser('circleId') circleId: string,
+  ) {
+    return this.cardService.updateCard(cardId, circleId, dto);
   }
 
   @Delete(':id')

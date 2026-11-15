@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/i18n';
 import { cn, CURRENCIES } from '@/lib/utils';
 import type { Transaction, Category, Currency, TransactionType, CreditCard, PaymentMethod } from '@/types';
 import { Loader2, Lock, Unlock, Calendar, Wallet, CreditCard as CreditCardIcon } from 'lucide-react';
@@ -20,6 +21,7 @@ interface TransactionFormProps {
 export function TransactionForm({ type, categories, transaction, onSuccess, onCancel }: TransactionFormProps) {
   const { addToast } = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
   const [currency, setCurrency] = useState<Currency>(transaction?.currency || 'ARS');
@@ -49,26 +51,26 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
     try {
       const parsedAmount = parseFloat(amount);
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        addToast('warning', 'Please enter a valid amount.');
+        addToast('warning', t('transactionForm.invalidAmount'));
         setIsSubmitting(false);
         return;
       }
 
       if (!categoryId) {
-        addToast('warning', 'Please select a category.');
+        addToast('warning', t('transactionForm.selectCategoryWarning'));
         setIsSubmitting(false);
         return;
       }
 
       if (paymentMethod === 'card' && !cardId) {
-        addToast('warning', 'Please select a card.');
+        addToast('warning', t('transactionForm.selectCardWarning'));
         setIsSubmitting(false);
         return;
       }
 
       const today = format(new Date(), 'yyyy-MM-dd');
       if (transactionDate > today) {
-        addToast('warning', 'Date cannot be in the future.');
+        addToast('warning', t('transactionForm.futureDate'));
         setIsSubmitting(false);
         return;
       }
@@ -89,11 +91,10 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       if (transaction) {
         // Update existing
         await apiClient.updateExpense(transaction.id, baseData);
-        addToast('success', 'Transaction updated successfully.');
+        addToast('success', t('transactionForm.updated'));
       } else if (type === 'expense') {
-        // Create expense
         await apiClient.createExpense(baseData);
-        addToast('success', 'Expense added successfully.');
+        addToast('success', t('transactionForm.expenseAdded'));
       } else {
         // Create income
         await apiClient.createIncome({
@@ -105,13 +106,13 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           payment_method: paymentMethod,
           card_id: paymentMethod === 'card' ? cardId : undefined,
         });
-        addToast('success', 'Income added successfully.');
+        addToast('success', t('transactionForm.incomeAdded'));
       }
 
       onSuccess();
     } catch (err: unknown) {
       const error = err as { message?: string };
-      addToast('error', error.message || 'Failed to save transaction.');
+      addToast('error', error.message || t('transactionForm.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -122,7 +123,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       {/* Amount and Currency */}
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2">
-          <label htmlFor="amount" className="label-field">Amount</label>
+          <label htmlFor="amount" className="label-field">{t('transactionForm.amount')}</label>
           <input
             id="amount"
             type="text"
@@ -145,7 +146,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           />
         </div>
         <div>
-          <label htmlFor="currency" className="label-field">Currency</label>
+          <label htmlFor="currency" className="label-field">{t('transactionForm.currency')}</label>
           <select
             id="currency"
             value={currency}
@@ -162,7 +163,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
 
       {/* Category */}
       <div>
-        <label htmlFor="category" className="label-field">Category</label>
+        <label htmlFor="category" className="label-field">{t('transactionForm.category')}</label>
         <select
           id="category"
           value={categoryId}
@@ -171,10 +172,10 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           required
           disabled={isSubmitting}
         >
-          <option value="">Select a category</option>
+          <option value="">{t('transactionForm.selectCategory')}</option>
           {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
-              {cat.name} {cat.is_default ? '(default)' : ''}
+              {cat.name} {cat.is_default ? `(${t('common.default').toLowerCase()})` : ''}
             </option>
           ))}
         </select>
@@ -183,7 +184,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       {/* Description */}
       <div>
         <label htmlFor="description" className="label-field">
-          Description
+          {t('transactionForm.description')}
         </label>
         <input
           id="description"
@@ -191,7 +192,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="input-field"
-          placeholder="What was this for?"
+          placeholder={t('transactionForm.descriptionPlaceholder')}
           maxLength={500}
           disabled={isSubmitting}
         />
@@ -200,7 +201,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       {/* Merchant Name */}
       <div>
         <label htmlFor="merchant" className="label-field">
-          Merchant / Business
+          {t('transactionForm.merchant')}
         </label>
         <input
           id="merchant"
@@ -208,7 +209,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           value={merchantName}
           onChange={(e) => setMerchantName(e.target.value)}
           className="input-field"
-          placeholder="Where did you spend?"
+          placeholder={t('transactionForm.merchantPlaceholder')}
           maxLength={200}
           disabled={isSubmitting}
         />
@@ -217,7 +218,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       {/* Payment Method */}
       <div className="space-y-3">
           <div>
-            <label className="label-field">Payment Method</label>
+            <label className="label-field">{t('transactionForm.paymentMethod')}</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -230,7 +231,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
                 )}
               >
                 <Wallet className="h-4 w-4" />
-                <span className="text-sm font-medium">Cash</span>
+                <span className="text-sm font-medium">{t('common.cash')}</span>
               </button>
               <button
                 type="button"
@@ -243,16 +244,16 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
                 )}
               >
                 <CreditCardIcon className="h-4 w-4" />
-                <span className="text-sm font-medium">Card</span>
+                <span className="text-sm font-medium">{t('common.card')}</span>
               </button>
             </div>
           </div>
           {paymentMethod === 'card' && (
             <div>
-              <label htmlFor="card" className="label-field">Card</label>
+              <label htmlFor="card" className="label-field">{t('recurring.card')}</label>
               {cards.length === 0 ? (
                 <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
-                  No cards registered. Add a card first on the Cards page.
+                  {t('transactionForm.noCards')}
                 </p>
               ) : (
                 <select
@@ -263,7 +264,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
                   required
                   disabled={isSubmitting}
                 >
-                  <option value="">Select a card</option>
+                  <option value="">{t('transactionForm.selectCard')}</option>
                   {cards.map((card) => (
                     <option key={card.id} value={card.id}>
                       {card.bank_name} •••• {card.last_four_digits} ({card.card_mode}){card.tag ? ` ${card.tag}` : ''}
@@ -278,7 +279,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
       {/* Date */}
       <div>
         <label htmlFor="date" className="label-field">
-          Date
+          {t('transactionForm.date')}
         </label>
         <div className="relative">
           <input
@@ -306,9 +307,9 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
                 <Unlock className="h-5 w-5 text-gray-400" />
               )}
               <div>
-                <p className="text-sm font-medium text-gray-900">Gift Hidden Mode</p>
+                <p className="text-sm font-medium text-gray-900">{t('transactionForm.giftHiddenMode')}</p>
                 <p className="text-xs text-gray-500">
-                  Hide details from other members while including in totals
+                  {t('transactionForm.giftHiddenDesc')}
                 </p>
               </div>
             </div>
@@ -321,7 +322,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
               )}
               role="switch"
               aria-checked={isPrivate}
-              aria-label="Toggle gift hidden mode"
+              aria-label={t('transactionForm.toggleGiftHidden')}
             >
               <span
                 className={cn(
@@ -335,7 +336,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           {isPrivate && (
             <div>
               <label htmlFor="hiddenUntil" className="label-field">
-                Visible after (optional)
+                {t('transactionForm.visibleAfter')}
               </label>
               <input
                 id="hiddenUntil"
@@ -347,7 +348,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
                 disabled={isSubmitting}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Leave empty to keep private indefinitely.
+                {t('transactionForm.visibleAfterHint')}
               </p>
             </div>
           )}
@@ -362,7 +363,7 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           className="btn-secondary"
           disabled={isSubmitting}
         >
-          Cancel
+          {t('transactionForm.cancel')}
         </button>
         <button
           type="submit"
@@ -372,10 +373,10 @@ export function TransactionForm({ type, categories, transaction, onSuccess, onCa
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Saving...
+              {t('transactionForm.saving')}
             </>
           ) : (
-            transaction ? 'Save Changes' : type === 'expense' ? 'Add Expense' : 'Add Income'
+            transaction ? t('transactionForm.saveChanges') : type === 'expense' ? t('transactionForm.addExpense') : t('transactionForm.addIncome')
           )}
         </button>
       </div>

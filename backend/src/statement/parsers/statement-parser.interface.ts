@@ -12,6 +12,8 @@ export interface ParsedStatementItem {
   description: string;
   amount: number;
   currency: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
 }
 
 export interface IStatementParser {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { login, loginWithGoogle, isLoading, error, clearError } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,13 +32,13 @@ export default function LoginPage() {
     clearError();
 
     if (!email || !password) {
-      addToast('warning', 'Please enter both email and password.');
+      addToast('warning', t('login.enterCredentials'));
       return;
     }
 
     try {
       const user = await login(email, password);
-      addToast('success', 'Welcome back!');
+      addToast('success', t('login.welcomeBack'));
       if (user.must_change_password) {
         router.push('/change-password');
       } else {
@@ -51,10 +53,10 @@ export default function LoginPage() {
     clearError();
     try {
       await loginWithGoogle();
-      addToast('success', 'Welcome back!');
+      addToast('success', t('login.welcomeBack'));
       router.push(safeRedirect || '/dashboard');
     } catch {
-      addToast('error', 'Google sign-in failed. Please try again.');
+      addToast('error', t('login.googleFailed'));
     }
   };
 
@@ -66,13 +68,13 @@ export default function LoginPage() {
           <div className="h-14 w-14 rounded-2xl bg-pulse-blue-500 flex items-center justify-center shadow-lg mb-4">
             <span className="text-white font-bold text-2xl">P</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">PulseExpends</h1>
-          <p className="text-sm text-gray-500 mt-1">Family Expense Management</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('login.appName')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('login.tagline')}</p>
         </div>
 
         {/* Card */}
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('login.signIn')}</h2>
 
           {/* Google SSO Button — only when configured */}
           {googleEnabled && (
@@ -102,7 +104,7 @@ export default function LoginPage() {
                     fill="#EA4335"
                   />
                 </svg>
-                <span>Continuar con Google</span>
+                <span>{t('login.continueWithGoogle')}</span>
               </button>
 
               {/* Divider */}
@@ -111,7 +113,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-2 text-gray-500">or continue with email</span>
+                  <span className="bg-white px-2 text-gray-500">{t('login.orContinueWithEmail')}</span>
                 </div>
               </div>
             </>
@@ -128,7 +130,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="label-field">
-                Email address
+                {t('login.emailAddress')}
               </label>
               <input
                 id="email"
@@ -146,13 +148,13 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="label-field">
-                  Password
+                  {t('login.password')}
                 </label>
                 <Link
                   href="/forgot-password"
                   className="text-xs font-medium text-pulse-blue-500 hover:text-pulse-blue-600"
                 >
-                  Forgot password?
+                  {t('login.forgotPassword')}
                 </Link>
               </div>
               <div className="relative">
@@ -162,7 +164,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field pr-10"
-                  placeholder="Enter your password"
+                  placeholder={t('login.passwordPlaceholder')}
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
@@ -171,7 +173,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -186,10 +188,10 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Signing in...
+                  {t('login.signingIn')}
                 </>
               ) : (
-                'Sign in'
+                t('login.signInBtn')
               )}
             </button>
           </form>
@@ -198,7 +200,7 @@ export default function LoginPage() {
           <p className="mt-6 text-center text-sm text-gray-500">
             Don&apos;t have an account?{' '}
             <Link href="/register" className="font-semibold text-pulse-blue-500 hover:text-pulse-blue-600">
-              Sign up
+              {t('login.signUp')}
             </Link>
           </p>
         </div>

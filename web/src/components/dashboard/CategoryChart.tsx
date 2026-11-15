@@ -4,19 +4,11 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import type { Category } from '@/types';
 import { EmptyState } from '@/components/ui/Tabs';
+import { useTranslation } from '@/i18n';
 import { Tag } from 'lucide-react';
 
 const CHART_COLORS = [
-  '#3B82F6', // blue-500
-  '#EF4444', // red-500
-  '#10B981', // emerald-500
-  '#FBBF24', // yellow-400
-  '#8B5CF6', // violet-500
-  '#F97316', // orange-500
-  '#06B6D4', // cyan-500
-  '#EC4899', // pink-500
-  '#6366F1', // indigo-500
-  '#84CC16', // lime-500
+  '#3B82F6', '#EF4444', '#10B981', '#FBBF24', '#8B5CF6', '#F97316', '#06B6D4', '#EC4899', '#6366F1', '#84CC16',
 ];
 
 interface CategoryChartProps {
@@ -25,6 +17,8 @@ interface CategoryChartProps {
 }
 
 export function CategoryChart({ categories, breakdown }: CategoryChartProps) {
+  const { t } = useTranslation();
+
   const data = Object.entries(breakdown)
     .map(([categoryId, amount], index) => {
       const category = categories.find((c) => c.id === categoryId);
@@ -40,11 +34,11 @@ export function CategoryChart({ categories, breakdown }: CategoryChartProps) {
   if (data.length === 0) {
     return (
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.expenseBreakdown')}</h3>
         <EmptyState
           icon={<Tag className="h-12 w-12" />}
-          title="No data yet"
-          description="Add some expenses to see the breakdown by category."
+          title={t('dashboard.noDataYet')}
+          description={t('dashboard.noDataBreakdown')}
         />
       </div>
     );
@@ -66,7 +60,7 @@ export function CategoryChart({ categories, breakdown }: CategoryChartProps) {
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.expenseBreakdown')}</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

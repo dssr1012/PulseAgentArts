@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
-import { CreateCardDto } from './dto/card.dto';
+import { CreateCardDto, UpdateCardDto } from './dto/card.dto';
 
 @Injectable()
 export class CardService {
@@ -38,6 +38,31 @@ export class CardService {
     });
   }
 
+  async updateCard(cardId: string, circleId: string, dto: UpdateCardDto) {
+    const card = await this.prisma.creditCard.findUnique({
+      where: { id: cardId },
+    });
+
+    if (!card || card.groupId !== circleId) {
+      throw new NotFoundException({
+        errorCode: 'CARD_NOT_FOUND',
+        message: 'Credit card not found',
+      });
+    }
+
+    const data: any = {};
+    if (dto.bankName !== undefined) data.bankName = dto.bankName;
+    if (dto.cardType !== undefined) data.cardType = dto.cardType as any;
+    if (dto.cardMode !== undefined) data.cardMode = dto.cardMode as any;
+    if (dto.last4Digits !== undefined) data.lastFourDigits = dto.last4Digits;
+    if (dto.tag !== undefined) data.tag = dto.tag;
+
+    return this.prisma.creditCard.update({
+      where: { id: cardId },
+      data,
+    });
+  }
+
   async deleteCard(cardId: string, circleId: string) {
     const card = await this.prisma.creditCard.findUnique({
       where: { id: cardId },
@@ -50,6 +75,36 @@ export class CardService {
       });
     }
 
-    await this.prisma.creditCard.delete({ where: { id: cardId } });
+    const result = await this.prisma.$transaction(async (tx) => {
+      const affectedExpenses = await tx.transaction.count({
+        where: { cardId, type: 'expense' },
+      });
+
+      if (affectedExpenses > 0) {
+        await tx.transaction.updateMany({
+          where: { cardId },
+          data: {
+            cardId: null,
+            paymentMethod: 'cash',
+            confirmationStatus: 'pending_confirmation',
+          },
+        });
+      }
+
+      await tx.recurringTransaction.updateMany({
+        where: { cardId },
+        data: { cardId: null, paymentMethod: 'cash' },
+      });
+
+      await tx.creditCard.delete({ where: { id: cardId } });
+
+      return { affectedExpenses };
+    });
+
+    this.logger.log(
+      `Card ${cardId} deleted; ${result.affectedExpenses} expense(s) marked for review`,
+    );
+
+    return result;
   }
 }

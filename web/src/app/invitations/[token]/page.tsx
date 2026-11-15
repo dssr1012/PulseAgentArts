@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import type { InvitationValidation } from '@/types';
 import { LoadingPage } from '@/components/ui/Spinner';
@@ -14,6 +15,7 @@ export default function InvitationPage() {
   const params = useParams();
   const { isAuthenticated, refreshCircles, setActiveCircle } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const token = params.token as string;
   const [validation, setValidation] = useState<InvitationValidation | null>(null);
@@ -31,11 +33,11 @@ export default function InvitationPage() {
       } catch (err: unknown) {
         const apiError = err as { code?: string; message?: string };
         if (apiError.code === 'INVITE_EXPIRED') {
-          setError('This invitation has expired. Please request a new one.');
+          setError(t('invitations.expired'));
         } else if (apiError.code === 'INVITE_CONSUMED') {
-          setError('This invitation has already been used.');
+          setError(t('invitations.consumed'));
         } else {
-          setError('Invalid invitation link.');
+          setError(t('invitations.invalid'));
         }
       } finally {
         setIsLoading(false);
@@ -56,22 +58,22 @@ export default function InvitationPage() {
       const result = await apiClient.acceptInvitation(token) as { group_id: string; role: string };
       await refreshCircles();
       setActiveCircle(result.group_id);
-      addToast('success', 'You have joined the Family Circle!');
+      addToast('success', t('invitations.joinedSuccess'));
       router.push('/circle');
     } catch (err: unknown) {
       const apiError = err as { code?: string };
       if (apiError.code === 'CIRCLE_ALREADY_MEMBER') {
-        addToast('warning', 'You already belong to a Family Circle.');
+        addToast('warning', t('invitations.alreadyMember'));
         router.push('/circle');
       } else {
-        addToast('error', 'Failed to accept invitation.');
+        addToast('error', t('invitations.acceptFailed'));
       }
     } finally {
       setIsAccepting(false);
     }
   };
 
-  if (isLoading) return <LoadingPage message="Validating invitation..." />;
+  if (isLoading) return <LoadingPage message={t('invitations.validating')} />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -80,17 +82,17 @@ export default function InvitationPage() {
           {error ? (
             <>
               <XCircle className="h-12 w-12 text-pulse-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Invalid Invitation</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('invitations.invalidInvitation')}</h2>
               <p className="text-sm text-gray-500">{error}</p>
             </>
           ) : validation ? (
             <>
               <CheckCircle className="h-12 w-12 text-pulse-emerald-500 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Join {validation.circle_name}
+                {t('invitations.join')} {validation.circle_name}
               </h2>
               <p className="text-sm text-gray-500 mb-6">
-                {validation.inviter_name} has invited you to join their Family Circle.
+                {validation.inviter_name} {t('invitations.invitedYou')}
               </p>
               <button
                 onClick={handleAccept}
@@ -100,9 +102,9 @@ export default function InvitationPage() {
                 {isAccepting ? (
                   <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                 ) : isAuthenticated ? (
-                  'Accept Invitation'
+                  t('invitations.acceptInvitation')
                 ) : (
-                  'Sign in to Accept'
+                  t('invitations.signInToAccept')
                 )}
               </button>
             </>

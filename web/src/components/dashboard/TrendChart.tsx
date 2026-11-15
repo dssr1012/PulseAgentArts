@@ -2,20 +2,13 @@
 
 import React, { useMemo } from 'react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart,
 } from 'recharts';
 import type { Transaction } from '@/types';
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
 import { EmptyState } from '@/components/ui/Tabs';
+import { useTranslation } from '@/i18n';
 import { TrendingUp } from 'lucide-react';
 
 interface TrendChartProps {
@@ -23,6 +16,9 @@ interface TrendChartProps {
 }
 
 export function TrendChart({ transactions }: TrendChartProps) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'en' ? enUS : es;
+
   const data = useMemo(() => {
     const months: { month: string; income: number; expenses: number }[] = [];
     const now = new Date();
@@ -31,16 +27,16 @@ export function TrendChart({ transactions }: TrendChartProps) {
       const date = subMonths(now, i);
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
-      const monthLabel = format(date, 'MMM', { locale: es });
+      const monthLabel = format(date, 'MMM', { locale: dateLocale });
 
       let income = 0;
       let expenses = 0;
 
-      transactions.forEach((t) => {
-        const tDate = new Date(t.transaction_date);
+      transactions.forEach((txn) => {
+        const tDate = new Date(txn.transaction_date);
         if (isWithinInterval(tDate, { start: monthStart, end: monthEnd })) {
-          if (t.type === 'income') income += t.amount;
-          else expenses += t.amount;
+          if (txn.type === 'income') income += txn.amount;
+          else expenses += txn.amount;
         }
       });
 
@@ -48,16 +44,16 @@ export function TrendChart({ transactions }: TrendChartProps) {
     }
 
     return months;
-  }, [transactions]);
+  }, [transactions, dateLocale]);
 
   if (transactions.length === 0) {
     return (
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Trend</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.monthlyTrend')}</h3>
         <EmptyState
           icon={<TrendingUp className="h-12 w-12" />}
-          title="No data yet"
-          description="Add transactions to see the monthly trend."
+          title={t('dashboard.noDataYet')}
+          description={t('dashboard.noDataTrend')}
         />
       </div>
     );
@@ -70,7 +66,7 @@ export function TrendChart({ transactions }: TrendChartProps) {
           <p className="text-sm font-medium text-gray-900 mb-1">{label}</p>
           {payload.map((entry) => (
             <p key={entry.dataKey} className="text-xs" style={{ color: entry.color }}>
-              {entry.dataKey === 'income' ? 'Income' : 'Expenses'}: ${entry.value.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              {entry.dataKey === 'income' ? t('dashboard.income') : t('dashboard.expenses')}: ${entry.value.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </p>
           ))}
         </div>
@@ -81,7 +77,7 @@ export function TrendChart({ transactions }: TrendChartProps) {
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Trend</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.monthlyTrend')}</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
@@ -96,43 +92,22 @@ export function TrendChart({ transactions }: TrendChartProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 12, fill: '#6B7280' }}
-              axisLine={{ stroke: '#E5E7EB' }}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: '#6B7280' }}
-              axisLine={{ stroke: '#E5E7EB' }}
-              tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
-            />
+            <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={{ stroke: '#E5E7EB' }} />
+            <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={{ stroke: '#E5E7EB' }} tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`} />
             <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="income"
-              stroke="#10B981"
-              strokeWidth={2}
-              fill="url(#colorIncome)"
-            />
-            <Area
-              type="monotone"
-              dataKey="expenses"
-              stroke="#EF4444"
-              strokeWidth={2}
-              fill="url(#colorExpenses)"
-            />
+            <Area type="monotone" dataKey="income" stroke="#10B981" strokeWidth={2} fill="url(#colorIncome)" />
+            <Area type="monotone" dataKey="expenses" stroke="#EF4444" strokeWidth={2} fill="url(#colorExpenses)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      {/* Legend */}
       <div className="flex items-center justify-center gap-6 mt-3">
         <div className="flex items-center gap-2">
           <div className="h-3 w-3 rounded-full bg-pulse-emerald-500" />
-          <span className="text-xs text-gray-600">Income</span>
+          <span className="text-xs text-gray-600">{t('dashboard.income')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="h-3 w-3 rounded-full bg-pulse-red-500" />
-          <span className="text-xs text-gray-600">Expenses</span>
+          <span className="text-xs text-gray-600">{t('dashboard.expenses')}</span>
         </div>
       </div>
     </div>

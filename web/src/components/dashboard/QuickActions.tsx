@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/i18n';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
 
 export function QuickActions() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -15,7 +17,7 @@ export function QuickActions() {
       >
         <Plus className="h-4 w-4" />
         <TrendingDown className="h-4 w-4" />
-        Add Expense
+        {t('dashboard.addExpense')}
       </button>
       <button
         onClick={() => router.push('/transactions?action=add-income')}
@@ -23,7 +25,7 @@ export function QuickActions() {
       >
         <Plus className="h-4 w-4" />
         <TrendingUp className="h-4 w-4" />
-        Add Income
+        {t('dashboard.addIncome')}
       </button>
     </div>
   );

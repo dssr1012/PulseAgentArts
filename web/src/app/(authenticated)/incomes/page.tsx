@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import type { Transaction, Category } from '@/types';
@@ -16,6 +17,7 @@ import { Plus, ArrowUpRight, Edit2, Trash2 } from 'lucide-react';
 export default function IncomesPage() {
   const { user, activeCircleId } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [incomes, setIncomes] = useState<Transaction[]>([]);
@@ -38,12 +40,12 @@ export default function IncomesPage() {
       if (error.code === 'CIRCLE_NOT_FOUND') {
         router.replace('/circle');
       } else {
-        addToast('error', 'Failed to load incomes.');
+        addToast('error', t('incomes.loadFailed'));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, addToast, router]);
+  }, [activeCircleId, addToast, router, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +67,7 @@ export default function IncomesPage() {
         if (error.code === 'CIRCLE_NOT_FOUND') {
           if (!cancelled) router.replace('/circle');
         } else if (!cancelled) {
-          addToast('error', 'Failed to load incomes.');
+          addToast('error', t('incomes.loadFailed'));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -74,16 +76,16 @@ export default function IncomesPage() {
 
     doFetch();
     return () => { cancelled = true; };
-  }, [activeCircleId, addToast]);
+  }, [activeCircleId, addToast, t]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this income record?')) return;
+    if (!confirm(t('incomes.confirmDelete'))) return;
     try {
       await apiClient.deleteExpense(id);
-      addToast('success', 'Income deleted.');
+      addToast('success', t('incomes.deleted'));
       fetchData();
     } catch {
-      addToast('error', 'Failed to delete.');
+      addToast('error', t('incomes.deleteFailed'));
     }
   };
 
@@ -91,11 +93,11 @@ export default function IncomesPage() {
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Incomes</h1>
-          <p className="text-sm text-gray-500 mt-1">Track all income sources</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('incomes.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('incomes.subtitle')}</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-pulse-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-pulse-emerald-600">
-          <Plus className="h-4 w-4" /> Add Income
+          <Plus className="h-4 w-4" /> {t('incomes.addIncome')}
         </button>
       </div>
 
@@ -104,9 +106,9 @@ export default function IncomesPage() {
       ) : incomes.length === 0 ? (
         <EmptyState
           icon={<ArrowUpRight className="h-12 w-12" />}
-          title="No incomes recorded"
-          description="Start tracking your income sources."
-          action={{ label: 'Add Income', onClick: () => setShowAddModal(true) }}
+          title={t('incomes.noIncomes')}
+          description={t('incomes.noIncomesDesc')}
+          action={{ label: t('incomes.addIncome'), onClick: () => setShowAddModal(true) }}
         />
       ) : (
         <div className="space-y-3">
@@ -134,7 +136,7 @@ export default function IncomesPage() {
         </div>
       )}
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Income" size="lg">
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title={t('incomes.addIncome')} size="lg">
         <TransactionForm type="income" categories={categories} onSuccess={() => { setShowAddModal(false); fetchData(); }} onCancel={() => setShowAddModal(false)} />
       </Modal>
     </div>

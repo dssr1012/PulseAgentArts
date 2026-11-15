@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { Eye, EyeOff, Loader2, Lock } from 'lucide-react';
 
@@ -11,6 +12,7 @@ export default function ChangePasswordPage() {
   const router = useRouter();
   const { user, refreshUser, logout } = useAuth();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -22,29 +24,29 @@ export default function ChangePasswordPage() {
     e.preventDefault();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      addToast('warning', 'Please fill in all fields.');
+      addToast('warning', t('changePassword.fillAllFields'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      addToast('error', 'New passwords do not match.');
+      addToast('error', t('changePassword.passwordsDoNotMatch'));
       return;
     }
 
     if (newPassword.length < 8) {
-      addToast('error', 'New password must be at least 8 characters long.');
+      addToast('error', t('changePassword.passwordTooShort'));
       return;
     }
 
     setIsLoading(true);
     try {
       await apiClient.changePassword(currentPassword, newPassword);
-      addToast('success', 'Password changed successfully!');
+      addToast('success', t('changePassword.changedSuccess'));
       await refreshUser();
       router.push('/dashboard');
     } catch (err) {
       const apiError = err as { message?: string };
-      addToast('error', apiError.message || 'Failed to change password. Please try again.');
+      addToast('error', apiError.message || t('changePassword.changeFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -62,11 +64,11 @@ export default function ChangePasswordPage() {
           <div className="h-14 w-14 rounded-2xl bg-pulse-blue-500 flex items-center justify-center shadow-lg mb-4">
             <Lock className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Change Password</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('changePassword.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
             {user?.must_change_password
-              ? 'You must change your password before continuing.'
-              : 'Update your password'}
+              ? t('changePassword.mustChange')
+              : t('changePassword.updatePassword')}
           </p>
         </div>
 
@@ -74,7 +76,7 @@ export default function ChangePasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="currentPassword" className="label-field">
-                Current password
+                {t('changePassword.currentPassword')}
               </label>
               <div className="relative">
                 <input
@@ -83,7 +85,7 @@ export default function ChangePasswordPage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="input-field pr-10"
-                  placeholder="Enter current password"
+                  placeholder={t('changePassword.currentPasswordPlaceholder')}
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
@@ -92,7 +94,7 @@ export default function ChangePasswordPage() {
                   type="button"
                   onClick={() => setShowCurrent(!showCurrent)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showCurrent ? 'Hide password' : 'Show password'}
+                  aria-label={showCurrent ? t('changePassword.hidePassword') : t('changePassword.showPassword')}
                 >
                   {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -101,7 +103,7 @@ export default function ChangePasswordPage() {
 
             <div>
               <label htmlFor="newPassword" className="label-field">
-                New password
+                {t('changePassword.newPassword')}
               </label>
               <div className="relative">
                 <input
@@ -110,7 +112,7 @@ export default function ChangePasswordPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="input-field pr-10"
-                  placeholder="Enter new password"
+                  placeholder={t('changePassword.newPasswordPlaceholder')}
                   required
                   autoComplete="new-password"
                   disabled={isLoading}
@@ -120,7 +122,7 @@ export default function ChangePasswordPage() {
                   type="button"
                   onClick={() => setShowNew(!showNew)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showNew ? 'Hide password' : 'Show password'}
+                  aria-label={showNew ? t('changePassword.hidePassword') : t('changePassword.showPassword')}
                 >
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -129,7 +131,7 @@ export default function ChangePasswordPage() {
 
             <div>
               <label htmlFor="confirmPassword" className="label-field">
-                Confirm new password
+                {t('changePassword.confirmPassword')}
               </label>
               <input
                 id="confirmPassword"
@@ -137,7 +139,7 @@ export default function ChangePasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="input-field"
-                placeholder="Re-enter new password"
+                placeholder={t('changePassword.confirmPasswordPlaceholder')}
                 required
                 autoComplete="new-password"
                 disabled={isLoading}
@@ -149,10 +151,10 @@ export default function ChangePasswordPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Changing password...
+                  {t('changePassword.changingPassword')}
                 </>
               ) : (
-                'Change password'
+                t('changePassword.changeBtn')
               )}
             </button>
           </form>
@@ -162,7 +164,7 @@ export default function ChangePasswordPage() {
               onClick={handleLogout}
               className="font-semibold text-pulse-blue-500 hover:text-pulse-blue-600"
             >
-              Log out instead
+              {t('changePassword.logoutInstead')}
             </button>
           </p>
         </div>
