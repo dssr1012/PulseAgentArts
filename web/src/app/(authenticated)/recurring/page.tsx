@@ -20,6 +20,7 @@ import {
   Calendar,
   CreditCard as CreditCardIcon,
   AlertCircle,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function RecurringPage() {
@@ -52,6 +53,8 @@ export default function RecurringPage() {
   const [startDate, setStartDate] = useState('');
   const [totalInstallments, setTotalInstallments] = useState(12);
   const [originalAmount, setOriginalAmount] = useState('');
+  const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -90,6 +93,7 @@ export default function RecurringPage() {
     setStartDate(new Date().toISOString().slice(0, 10));
     setTotalInstallments(12);
     setOriginalAmount('');
+    setTransactionType('expense');
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -115,7 +119,7 @@ export default function RecurringPage() {
         amount: parsedAmount,
         currency,
         category_id: categoryId,
-        type: 'expense',
+        type: transactionType,
         payment_method: paymentMethod,
         card_id: paymentMethod === 'card' ? cardId : undefined,
         frequency,
@@ -149,6 +153,7 @@ export default function RecurringPage() {
     setInterval(item.interval);
     setDayOfMonth(item.day_of_month || 1);
     setStartDate(item.start_date.slice(0, 10));
+    setTransactionType(item.type);
     setShowEditModal(true);
   };
 
@@ -212,6 +217,8 @@ export default function RecurringPage() {
   };
 
   const isInstallment = (item: RecurringTransaction) => item.total_installments !== null;
+  const isIncome = (item: RecurringTransaction) => item.type === 'income';
+  const filteredRecurring = recurring.filter(item => filterType === 'all' || item.type === filterType);
 
   return (
     <div className="space-y-6">
@@ -229,11 +236,25 @@ export default function RecurringPage() {
         </button>
       </div>
 
+      {!isLoading && recurring.length > 0 && (
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+          <button type="button" onClick={() => setFilterType('all')} className={cn('px-4 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500')}>
+            {t('recurring.all')}
+          </button>
+          <button type="button" onClick={() => setFilterType('expense')} className={cn('px-4 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === 'expense' ? 'bg-white text-pulse-red-600 shadow-sm' : 'text-gray-500')}>
+            {t('recurring.expenseOnly')}
+          </button>
+          <button type="button" onClick={() => setFilterType('income')} className={cn('px-4 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500')}>
+            {t('recurring.incomeOnly')}
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-pulse-blue-500" />
         </div>
-      ) : recurring.length === 0 ? (
+      ) : filteredRecurring.length === 0 ? (
         <div className="card p-8 text-center">
           <RefreshCw className="h-10 w-10 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">{t('recurring.noRecurring')}</p>
@@ -241,20 +262,20 @@ export default function RecurringPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {recurring.map((item) => (
+          {filteredRecurring.map((item) => (
             <div key={item.id} className={cn('card p-5', !item.is_active && 'opacity-60')}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     'h-10 w-10 rounded-xl flex items-center justify-center',
-                    isInstallment(item) ? 'bg-purple-100' : 'bg-pulse-blue-100'
+                    isIncome(item) ? 'bg-emerald-100' : isInstallment(item) ? 'bg-purple-100' : 'bg-pulse-blue-100'
                   )}>
-                    {isInstallment(item) ? <CreditCardIcon className="h-5 w-5 text-purple-600" /> : <RefreshCw className="h-5 w-5 text-pulse-blue-600" />}
+                    {isIncome(item) ? <TrendingUp className="h-5 w-5 text-emerald-600" /> : isInstallment(item) ? <CreditCardIcon className="h-5 w-5 text-purple-600" /> : <RefreshCw className="h-5 w-5 text-pulse-blue-600" />}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{item.description || t('common.untitled')}</p>
                     <p className="text-xs text-gray-500">
-                      {isInstallment(item) ? t('recurring.installments') : t('recurring.recurring')} · {item.frequency}
+                      {isIncome(item) ? t('recurring.typeIncome') : t('recurring.typeExpense')} · {isInstallment(item) ? t('recurring.installments') : t('recurring.recurring')} · {item.frequency}
                     </p>
                   </div>
                 </div>
@@ -280,7 +301,9 @@ export default function RecurringPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">{t('common.amount')}</span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(item.amount, item.currency)}</span>
+                  <span className={cn('font-semibold', isIncome(item) ? 'text-emerald-600' : 'text-gray-900')}>
+                    {isIncome(item) ? '+' : ''}{formatCurrency(item.amount, item.currency)}
+                  </span>
                 </div>
                 {isInstallment(item) && (
                   <div className="flex items-center justify-between">
@@ -326,17 +349,28 @@ export default function RecurringPage() {
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title={t('recurring.addRecurringTransaction')} size="md">
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
-            <button type="button" onClick={() => setMode('recurring')} className={cn('flex-1 py-2 rounded-md text-sm font-medium transition-colors', mode === 'recurring' ? 'bg-white text-pulse-blue-600 shadow-sm' : 'text-gray-500')}>
-              {t('recurring.recurringIndefinite')}
+            <button type="button" onClick={() => { setTransactionType('expense'); setMode('recurring'); }} className={cn('flex-1 py-2 rounded-md text-sm font-medium transition-colors', transactionType === 'expense' ? 'bg-white text-pulse-red-600 shadow-sm' : 'text-gray-500')}>
+              {t('recurring.typeExpense')}
             </button>
-            <button type="button" onClick={() => setMode('installments')} className={cn('flex-1 py-2 rounded-md text-sm font-medium transition-colors', mode === 'installments' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500')}>
-              {t('recurring.installmentsCuotas')}
+            <button type="button" onClick={() => { setTransactionType('income'); setMode('recurring'); }} className={cn('flex-1 py-2 rounded-md text-sm font-medium transition-colors', transactionType === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500')}>
+              {t('recurring.typeIncome')}
             </button>
           </div>
 
+          {transactionType === 'expense' && (
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+              <button type="button" onClick={() => setMode('recurring')} className={cn('flex-1 py-2 rounded-md text-sm font-medium transition-colors', mode === 'recurring' ? 'bg-white text-pulse-blue-600 shadow-sm' : 'text-gray-500')}>
+                {t('recurring.recurringIndefinite')}
+              </button>
+              <button type="button" onClick={() => setMode('installments')} className={cn('flex-1 py-2 rounded-md text-sm font-medium transition-colors', mode === 'installments' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500')}>
+                {t('recurring.installmentsCuotas')}
+              </button>
+            </div>
+          )}
+
           <div>
             <label className="label-field">{t('common.description')}</label>
-            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="input-field" placeholder="e.g., Netflix, Gym, TV in 12 cuotas" required maxLength={200} />
+            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="input-field" placeholder={transactionType === 'income' ? t('recurring.incomePlaceholder') : t('recurring.expensePlaceholder')} required maxLength={200} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -431,6 +465,12 @@ export default function RecurringPage() {
       {/* Edit Modal */}
       <Modal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditingItem(null); }} title={t('recurring.editRecurringTransaction')} size="md">
         <form onSubmit={handleUpdate} className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Badge variant={transactionType === 'income' ? 'success' : 'default'}>
+              {transactionType === 'income' ? t('recurring.typeIncome') : t('recurring.typeExpense')}
+            </Badge>
+            {editingItem && isInstallment(editingItem) && <Badge variant="default">{t('recurring.installments')}</Badge>}
+          </div>
           <div>
             <label className="label-field">{t('common.description')}</label>
             <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="input-field" required maxLength={200} />

@@ -315,8 +315,15 @@
     "removeMember": "Eliminar"
   },
   "recurring": {
-    "title": "Recurrentes y Cuotas",
-    "subtitle": "Débitos automáticos y compras en cuotas",
+    "title": "Transacciones Recurrentes",
+    "subtitle": "Ingresos y gastos recurrentes, y cuotas",
+    "typeExpense": "Gasto",
+    "typeIncome": "Ingreso",
+    "all": "Todos",
+    "expenseOnly": "Gastos",
+    "incomeOnly": "Ingresos",
+    "incomePlaceholder": "ej., Sueldo, Freelance, Consultoría",
+    "expensePlaceholder": "ej., Netflix, Gym, Cuota del colegio",
     "addRecurring": "Agregar Recurrente",
     "noRecurring": "No hay transacciones recurrentes aún.",
     "noRecurringDesc": "Agregá débitos automáticos o compras en cuotas.",

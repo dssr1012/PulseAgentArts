@@ -315,8 +315,15 @@
     "removeMember": "Remove"
   },
   "recurring": {
-    "title": "Recurring & Installments",
-    "subtitle": "Automatic debits and purchases in installments",
+    "title": "Recurring Transactions",
+    "subtitle": "Recurring income, expenses, and installments",
+    "typeExpense": "Expense",
+    "typeIncome": "Income",
+    "all": "All",
+    "expenseOnly": "Expenses",
+    "incomeOnly": "Incomes",
+    "incomePlaceholder": "e.g., Salary, Freelance, Consulting",
+    "expensePlaceholder": "e.g., Netflix, Gym, School fees",
     "addRecurring": "Add Recurring",
     "noRecurring": "No recurring transactions yet.",
     "noRecurringDesc": "Add automatic debits or installment purchases.",
