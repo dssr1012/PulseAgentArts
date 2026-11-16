@@ -120,7 +120,7 @@ export default function AnomaliesPage() {
         />
       ) : (
         <div className="space-y-4">
-          {alerts.map((alert) => (
+          {alerts.filter(alert => alert.expense).map((alert) => (
             <div
               key={alert.id}
               className={cn(
