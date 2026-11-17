@@ -6,7 +6,7 @@ export function proxy(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'unsafe-eval'`,
+    `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' 'unsafe-eval'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
