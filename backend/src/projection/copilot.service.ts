@@ -4,6 +4,7 @@ import { PaymentStrategyService } from './payment-strategy.service';
 import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import { HuaweiCloudLlmService } from '../llm/huawei-cloud-llm.service';
 import { PrismaService } from '../common/prisma.service';
+import { RedisService } from '../common/redis.service';
 import { DashboardSpec, Widget } from './ai-dashboard.interface';
 
 export interface CopilotResponse {
@@ -21,6 +22,7 @@ export class CopilotService {
     private llmOrchestrator: LlmOrchestratorService,
     private huaweiLlm: HuaweiCloudLlmService,
     private prisma: PrismaService,
+    private redis: RedisService,
   ) {}
 
   async ask(circleId: string, question: string): Promise<CopilotResponse> {
@@ -74,6 +76,33 @@ Devuelve SOLO JSON válido, sin markdown.`;
       this.logger.error(`Copilot failed: ${err.message}`);
       return { text: 'Lo siento, no pude procesar tu pregunta en este momento. Intenta de nuevo.' };
     }
+  }
+
+
+  async askAsync(circleId: string, question: string): Promise<{ jobId: string }> {
+    const jobId = `copilot:${circleId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    await this.redis.setJSON(jobId, { status: 'pending' }, 300);
+
+    // Fire and forget — process in background
+    this.processAsync(jobId, circleId, question).catch((err) => {
+      this.logger.error(`Async copilot failed: ${err.message}`);
+      this.redis.setJSON(jobId, { status: 'error', text: 'Lo siento, ocurrió un error procesando tu pregunta.' }, 300).catch(() => {});
+    });
+
+    return { jobId };
+  }
+
+  async getResult(jobId: string): Promise<{ status: string; text?: string; widgets?: any[] }> {
+    const result = await this.redis.getJSON<any>(jobId);
+    if (!result) {
+      return { status: 'not_found' };
+    }
+    return result;
+  }
+
+  private async processAsync(jobId: string, circleId: string, question: string): Promise<void> {
+    const response = await this.ask(circleId, question);
+    await this.redis.setJSON(jobId, { status: 'done', text: response.text, widgets: response.widgets || [] }, 300);
   }
 
   async askWhatsApp(circleId: string, question: string): Promise<string> {

@@ -624,8 +624,13 @@ class ApiClient {
   // ============ Copilot API ============
 
   async askCopilot(circleId: string, question: string) {
-    const response = await this.client.post(`/circles/${circleId}/copilot`, { question }, { timeout: 180000 });
-    return response.data as { text: string; widgets?: any[] };
+    const response = await this.client.post(`/circles/${circleId}/copilot`, { question });
+    return response.data as { jobId: string };
+  }
+
+  async getCopilotResult(circleId: string, jobId: string) {
+    const response = await this.client.get(`/circles/${circleId}/copilot/result/${jobId}`);
+    return response.data as { status: string; text?: string; widgets?: any[] };
   }
 
   // ============ Statement Deletion API ============

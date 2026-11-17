@@ -58,14 +58,33 @@ export function CopilotChat() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.askCopilot(activeCircleId, q);
-      const assistantMsg: Message = {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        text: response.text,
-        widgets: response.widgets,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      const { jobId } = await apiClient.askCopilot(activeCircleId, q);
+
+      const maxPolls = 90;
+      const pollInterval = 2000;
+      for (let i = 0; i < maxPolls; i++) {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        const result = await apiClient.getCopilotResult(activeCircleId, jobId);
+        if (result.status === 'done') {
+          const assistantMsg: Message = {
+            id: `a-${Date.now()}`,
+            role: 'assistant',
+            text: result.text || '',
+            widgets: result.widgets,
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
+          break;
+        }
+        if (result.status === 'error' || result.status === 'not_found') {
+          const errorMsg: Message = {
+            id: `e-${Date.now()}`,
+            role: 'assistant',
+            text: t('copilot.errorResponse'),
+          };
+          setMessages((prev) => [...prev, errorMsg]);
+          break;
+        }
+      }
     } catch {
       addToast('error', t('copilot.error'));
       const errorMsg: Message = {

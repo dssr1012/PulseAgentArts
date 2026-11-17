@@ -133,12 +133,21 @@ export class ProjectionController {
   }
 
   @Post(':id/copilot')
-  @ApiOperation({ summary: 'Ask the financial copilot a question' })
+  @ApiOperation({ summary: 'Ask the financial copilot a question (async)' })
   async askCopilot(
     @Param('id') circleId: string,
     @Body() body: { question: string },
   ) {
-    return this.copilotService.ask(circleId, body.question);
+    return this.copilotService.askAsync(circleId, body.question);
+  }
+
+  @Get(':id/copilot/result/:jobId')
+  @ApiOperation({ summary: 'Poll for copilot result' })
+  async getCopilotResult(
+    @Param('id') circleId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.copilotService.getResult(jobId);
   }
 
   private fallbackInvestmentAdvice(data: any): string {

@@ -8,7 +8,7 @@ import { HuaweiCloudLlmService } from '../llm/huawei-cloud-llm.service';
 import { DashboardSpec, CompactFinancialData } from './ai-dashboard.interface';
 
 const CACHE_KEY = (circleId: string) => `ai-dashboard:${circleId}`;
-const CACHE_TTL = 3600; // 1 hour
+const CACHE_TTL = 2592000; // 30 days — regenerate monthly, not on every page load
 
 @Injectable()
 export class AiDashboardService {
