@@ -98,22 +98,22 @@ export function AiDashboard() {
         </div>
       )}
 
-      {fullWidgets.map((w) => (
-        <WidgetRenderer key={w.id} widget={w} />
+      {fullWidgets.map((w, i) => (
+        <WidgetRenderer key={`${w.id ?? "w"}-${i}`} widget={w} />
       ))}
 
       {halfWidgets.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {halfWidgets.map((w) => (
-            <WidgetRenderer key={w.id} widget={w} />
+          {halfWidgets.map((w, i) => (
+            <WidgetRenderer key={`${w.id ?? "w"}-${i}`} widget={w} />
           ))}
         </div>
       )}
 
       {thirdWidgets.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {thirdWidgets.map((w) => (
-            <WidgetRenderer key={w.id} widget={w} />
+          {thirdWidgets.map((w, i) => (
+            <WidgetRenderer key={`${w.id ?? "w"}-${i}`} widget={w} />
           ))}
         </div>
       )}
