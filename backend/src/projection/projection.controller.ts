@@ -1,12 +1,14 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProjectionService } from './projection.service';
 import { PaymentStrategyService } from './payment-strategy.service';
+import { AiDashboardService } from './ai-dashboard.service';
+import { CopilotService } from './copilot.service';
 import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { IsOptional, IsInt, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsInt, IsNumber, Min, Max, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ProjectionQueryDto {
@@ -25,6 +27,12 @@ class StrategyQueryDto {
   availableCash: number;
 }
 
+class DashboardQueryDto {
+  @IsOptional()
+  @IsBoolean()
+  refresh?: boolean;
+}
+
 @ApiTags('Projection')
 @Controller('circles')
 @UseGuards(JwtAuthGuard, CircleMembershipGuard)
@@ -33,6 +41,8 @@ export class ProjectionController {
   constructor(
     private projectionService: ProjectionService,
     private paymentStrategyService: PaymentStrategyService,
+    private aiDashboardService: AiDashboardService,
+    private copilotService: CopilotService,
     private llmOrchestrator: LlmOrchestratorService,
   ) {}
 
@@ -45,7 +55,6 @@ export class ProjectionController {
     const months = query.months || 12;
     const projection = await this.projectionService.getProjection(circleId, months);
 
-    // Add LLM explanation if available
     let explanation: string | undefined;
     if (this.llmOrchestrator) {
       try {
@@ -66,7 +75,6 @@ export class ProjectionController {
   ) {
     const strategy = await this.paymentStrategyService.getStrategy(circleId, query.availableCash);
 
-    // Add LLM explanation if available
     if (this.llmOrchestrator) {
       try {
         strategy.reasoning = await this.llmOrchestrator.explainPaymentStrategy(strategy, 'es');
@@ -113,6 +121,24 @@ export class ProjectionController {
       surplus: surplusData,
       suggestions,
     };
+  }
+
+  @Get(':id/ai-dashboard')
+  @ApiOperation({ summary: 'Get AI-generated dashboard layout' })
+  async getAiDashboard(
+    @Param('id') circleId: string,
+    @Query() query: DashboardQueryDto,
+  ) {
+    return this.aiDashboardService.getDashboard(circleId, query.refresh === true);
+  }
+
+  @Post(':id/copilot')
+  @ApiOperation({ summary: 'Ask the financial copilot a question' })
+  async askCopilot(
+    @Param('id') circleId: string,
+    @Body() body: { question: string },
+  ) {
+    return this.copilotService.ask(circleId, body.question);
   }
 
   private fallbackInvestmentAdvice(data: any): string {

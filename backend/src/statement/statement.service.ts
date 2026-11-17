@@ -677,4 +677,27 @@ export class StatementService {
       })),
     }));
   }
+  async deleteStatement(cardId: string, statementId: string): Promise<{ deleted: boolean }> {
+    const statement = await this.prisma.cardStatement.findFirst({
+      where: { id: statementId, cardId },
+    });
+
+    if (!statement) {
+      throw new NotFoundException('Statement not found');
+    }
+
+    // Delete statement items first (cascade)
+    await this.prisma.statementItem.deleteMany({
+      where: { statementId },
+    });
+
+    // Delete the statement
+    await this.prisma.cardStatement.delete({
+      where: { id: statementId },
+    });
+
+    this.logger.log(`Deleted statement ${statementId} for card ${cardId}`);
+    return { deleted: true };
+  }
+
 }

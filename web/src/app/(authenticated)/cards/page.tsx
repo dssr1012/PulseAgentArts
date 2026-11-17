@@ -192,6 +192,17 @@ export default function CardsPage() {
     }
   };
 
+  const handleDeleteStatement = async (cardId: string, statementId: string) => {
+    if (!confirm(t('cards.confirmDeleteStatement'))) return;
+    try {
+      await apiClient.deleteStatement(cardId, statementId);
+      setCardStatements(prev => prev.filter(s => s.id !== statementId));
+      addToast('success', t('cards.statementDeleted'));
+    } catch {
+      addToast('error', t('cards.statementDeleteFailed'));
+    }
+  };
+
   const handleStatementParsed = (preview: StatementPreview) => {
     setReconciliationPreviewId(preview.preview_id);
   };
@@ -532,15 +543,24 @@ export default function CardsPage() {
                       </span>
                     </div>
                   </div>
-                  {stmt.is_confirmed ? (
-                    <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                      <CheckCircle className="h-3 w-3" /> {t('common.confirmed')}
-                    </span>
-                  ) : (
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                      {t('common.pending')}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {stmt.is_confirmed ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                        <CheckCircle className="h-3 w-3" /> {t('common.confirmed')}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                        {t('common.pending')}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleDeleteStatement(selectedCard!.id, stmt.id)}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label={t('cards.deleteStatement')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-red-50 rounded-lg p-3">

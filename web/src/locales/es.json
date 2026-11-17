@@ -241,7 +241,11 @@
     "deletedWithExpenses2": "gasto(s) marcados para revisión — editálos para normalizar.",
     "deletedSuccess": "Tarjeta eliminada exitosamente.",
     "deleteFailed": "Error al eliminar tarjeta.",
-    "statementsLoadFailed": "Error al cargar resúmenes."
+    "statementsLoadFailed": "Error al cargar resúmenes.",
+    "confirmDeleteStatement": "¿Seguro que querés eliminar este resumen? Se borrarán todos los movimientos asociados.",
+    "statementDeleted": "Resumen eliminado correctamente",
+    "statementDeleteFailed": "No se pudo eliminar el resumen",
+    "deleteStatement": "Eliminar resumen"
   },
   "anomalies": {
     "title": "Alertas de Anomalías",
@@ -500,5 +504,26 @@
     "incomeAdded": "Ingreso agregado exitosamente.",
     "saveFailed": "Error al guardar transacción.",
     "toggleGiftHidden": "Alternar modo regalo oculto"
+  },
+  "aiDashboard": {
+    "title": "Panel Inteligente",
+    "refresh": "Actualizar análisis",
+    "generating": "Analizando tus finanzas...",
+    "loadFailed": "No se pudo cargar el panel inteligente",
+    "insight": "Insight"
+  },
+  "copilot": {
+    "title": "Asistente Financiero",
+    "subtitle": "Preguntame sobre tus finanzas",
+    "open": "Abrir asistente",
+    "close": "Cerrar",
+    "askCopilot": "Preguntar",
+    "welcome": "Hola! Soy tu asistente financiero. Preguntame sobre tus gastos, proyecciones, estrategias de pago o cualquier duda sobre tus finanzas.",
+    "suggestions": "Preguntas sugeridas:",
+    "placeholder": "Escribi tu pregunta...",
+    "send": "Enviar",
+    "thinking": "Pensando...",
+    "error": "No se pudo conectar con el asistente",
+    "errorResponse": "Lo siento, no pude procesar tu pregunta. Intenta de nuevo."
   }
 }

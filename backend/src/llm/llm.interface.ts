@@ -6,6 +6,7 @@ export type LlmTask =
   | 'projection_explanation'
   | 'payment_strategy'
   | 'investment_advice'
+  | 'dashboard_design'
   | 'general_chat';
 
 export interface LlmMessage {
@@ -77,6 +78,12 @@ export const MODEL_ROUTING: Record<LlmTask, LlmModelConfig> = {
     modelId: 'glm-5.2',
     maxTokens: 2000,
     temperature: 0.4,
+  },
+  // Best model for dashboard design (needs JSON output with chart specs)
+  dashboard_design: {
+    modelId: 'glm-5.2',
+    maxTokens: 4000,
+    temperature: 0.3,
   },
   // Mid-tier for general chat
   general_chat: {

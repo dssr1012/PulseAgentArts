@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -77,6 +78,15 @@ export class CardStatementController {
 
   @Get(':cardId/statements')
   @ApiOperation({ summary: 'List statements for a credit card' })
+
+  @Delete(':cardId/statements/:statementId')
+  @ApiOperation({ summary: 'Delete a statement and its items' })
+  async deleteStatement(
+    @Param('cardId') cardId: string,
+    @Param('statementId') statementId: string,
+  ) {
+    return this.statementService.deleteStatement(cardId, statementId);
+  }
   async listStatements(
     @Param('cardId') cardId: string,
     @CurrentUser('circleId') circleId: string,

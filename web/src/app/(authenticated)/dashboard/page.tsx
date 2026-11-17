@@ -13,6 +13,8 @@ import { TrendChart } from '@/components/dashboard/TrendChart';
 import { TransactionFeed } from '@/components/dashboard/TransactionFeed';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AiDashboard } from '@/components/dashboard/ai/AiDashboard';
+import { CopilotChat } from '@/components/dashboard/ai/CopilotChat';
 
 export default function DashboardPage() {
   const { user, activeCircleId } = useAuth();
@@ -96,6 +98,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
+        <AiDashboard />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
@@ -163,6 +166,8 @@ export default function DashboardPage() {
       <QuickActions />
 
       <TransactionFeed transactions={transactions} />
+
+      <CopilotChat />
     </div>
   );
 }

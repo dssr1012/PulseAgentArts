@@ -241,7 +241,11 @@
     "deletedWithExpenses2": "expense(s) marked for review — please edit them to normalize.",
     "deletedSuccess": "Card deleted successfully.",
     "deleteFailed": "Failed to delete card.",
-    "statementsLoadFailed": "Failed to load statements."
+    "statementsLoadFailed": "Failed to load statements.",
+    "confirmDeleteStatement": "Are you sure you want to delete this statement? All associated charges will be removed.",
+    "statementDeleted": "Statement deleted successfully",
+    "statementDeleteFailed": "Could not delete the statement",
+    "deleteStatement": "Delete statement"
   },
   "anomalies": {
     "title": "Anomaly Alerts",
@@ -500,5 +504,26 @@
     "incomeAdded": "Income added successfully.",
     "saveFailed": "Failed to save transaction.",
     "toggleGiftHidden": "Toggle gift hidden mode"
+  },
+  "aiDashboard": {
+    "title": "AI Dashboard",
+    "refresh": "Refresh analysis",
+    "generating": "Analyzing your finances...",
+    "loadFailed": "Failed to load AI dashboard",
+    "insight": "Insight"
+  },
+  "copilot": {
+    "title": "Financial Assistant",
+    "subtitle": "Ask me about your finances",
+    "open": "Open assistant",
+    "close": "Close",
+    "askCopilot": "Ask",
+    "welcome": "Hi! I am your financial assistant. Ask me about your expenses, projections, payment strategies or any question about your finances.",
+    "suggestions": "Suggested questions:",
+    "placeholder": "Type your question...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "error": "Could not connect to assistant",
+    "errorResponse": "Sorry, I could not process your question. Try again."
   }
 }

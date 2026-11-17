@@ -4,6 +4,7 @@ import { PrismaService } from '../common/prisma.service';
 import { TransactionService } from '../transaction/transaction.service';
 import { WhatsappMessageParser } from './whatsapp-message.parser';
 import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
+import { CopilotService } from '../projection/copilot.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as QRCode from 'qrcode';
@@ -29,6 +30,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private transactionService: TransactionService,
     private messageParser: WhatsappMessageParser,
     private llmOrchestrator: LlmOrchestratorService,
+    private copilotService: CopilotService,
   ) {
     this.authDir = this.config.get<string>('WHATSAPP_AUTH_DIR', './whatsapp-auth');
     if (!fs.existsSync(this.authDir)) {
@@ -259,6 +261,17 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         } catch (llmErr) {
           this.logger.warn(`LLM fallback parsing failed: ${llmErr.message}`);
         }
+      // Check if this is an analysis request (not an expense)
+      if (!parsed && this.copilotService.isAnalysisRequest(text)) {
+        try {
+          const analysisResponse = await this.copilotService.askWhatsApp(circleId, text);
+          await this.sendReply(userId, msg.key.remoteJid, analysisResponse);
+          this.logger.log(`WhatsApp analysis response sent for: ${text.substring(0, 50)}`);
+        } catch (err) {
+          this.logger.error(`WhatsApp analysis failed: ${err.message}`);
+        }
+        continue;
+      }
       }
 
       if (!parsed) continue;

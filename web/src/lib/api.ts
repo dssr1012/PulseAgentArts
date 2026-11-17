@@ -612,6 +612,29 @@ class ApiClient {
     return response.data;
   }
 
+  // ============ AI Dashboard API ============
+
+  async getAiDashboard(circleId: string, refresh = false) {
+    const response = await this.client.get(`/circles/${circleId}/ai-dashboard`, {
+      params: { refresh },
+    });
+    return response.data;
+  }
+
+  // ============ Copilot API ============
+
+  async askCopilot(circleId: string, question: string) {
+    const response = await this.client.post(`/circles/${circleId}/copilot`, { question });
+    return response.data as { text: string; widgets?: any[] };
+  }
+
+  // ============ Statement Deletion API ============
+
+  async deleteStatement(cardId: string, statementId: string) {
+    const response = await this.client.delete(`/cards/${cardId}/statements/${statementId}`);
+    return response.data;
+  }
+
   // ============ Exchange Rate API ============
 
   async getExchangeRates() {
