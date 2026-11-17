@@ -36,7 +36,7 @@ export class RecurringTransactionService {
       endDate = this.calculateEndDate(startDate, dto.frequency, interval, dto.totalInstallments);
     }
 
-    return this.prisma.recurringTransaction.create({
+    const created = await this.prisma.recurringTransaction.create({
       data: {
         groupId: circleId,
         userId,
@@ -59,6 +59,14 @@ export class RecurringTransactionService {
         originalAmount: dto.originalAmount ?? null,
       },
     });
+
+    // Process immediately if already due (past start date) instead of waiting for cron
+    if (created.nextExecutionDate && new Date(created.nextExecutionDate) <= new Date()) {
+      await this.processOne(created, new Date());
+      return this.prisma.recurringTransaction.findUnique({ where: { id: created.id } });
+    }
+
+    return created;
   }
 
   async list(circleId: string) {
