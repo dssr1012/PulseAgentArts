@@ -223,7 +223,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         if (!user?.circleMemberships || user.circleMemberships.length === 0) continue;
 
         const circleId = user.circleMemberships[0].groupId;
-        const categoryId = await this.resolveCategory(userId, circleId, text);
+        const categoryId = await this.resolveCategory(userId, circleId, text, parsed.categoryName);
 
         const senderName = msg.key?.fromMe
           ? ''
@@ -263,9 +263,10 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
           currency: parsed.currency,
           categoryId,
           description: senderName + parsed.description,
+          merchantName: parsed.merchantName,
           source: 'whatsapp' as any,
           confirmationStatus: 'pending_confirmation',
-          transactionDate: new Date().toISOString(),
+          transactionDate: parsed.transactionDate || new Date().toISOString(),
           paymentMethod,
           cardId,
         });
@@ -331,7 +332,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private async resolveCategory(userId: string, circleId: string, text: string): Promise<string> {
+  private async resolveCategory(userId: string, circleId: string, text: string, explicitCategory?: string): Promise<string> {
+    if (explicitCategory) {
+      const cat = await this.prisma.category.findFirst({
+        where: { groupId: circleId, name: { equals: explicitCategory, mode: 'insensitive' as any } },
+      });
+      if (cat) return cat.id;
+    }
+
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (user?.whatsappDefaultCategoryId) {
       const cat = await this.prisma.category.findFirst({

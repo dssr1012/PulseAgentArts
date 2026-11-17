@@ -6,6 +6,9 @@ export interface ParsedExpenseMessage {
   currency: 'ARS' | 'USD' | 'EUR';
   paymentMethod: 'cash' | 'card';
   cardIdentifier?: string;
+  categoryName?: string;
+  merchantName?: string;
+  transactionDate?: string;
 }
 
 @Injectable()
@@ -20,20 +23,28 @@ export class WhatsappMessageParser {
   };
 
   parse(text: string): ParsedExpenseMessage | null {
-    const normalized = text.trim().toLowerCase();
+    const trimmed = text.trim();
+    const normalized = trimmed.toLowerCase();
     if (!normalized) return null;
 
-    const amount = this.extractAmount(normalized);
+    const categoryName = this.extractKeyValue(trimmed, ['categoria', 'cat']);
+    const merchantName = this.extractKeyValue(trimmed, ['negocio', 'comercio']);
+    const transactionDate = this.extractDate(trimmed);
+
+    const cleaned = this.stripKeyValues(trimmed);
+    const cleanedLower = cleaned.toLowerCase();
+
+    const amount = this.extractAmount(cleanedLower);
     if (amount === null || amount <= 0) return null;
 
-    const description = this.extractDescription(text.trim(), amount);
-    const currency = this.extractCurrency(normalized);
-    const paymentMethod = this.extractPaymentMethod(normalized);
+    const description = this.extractDescription(cleaned, amount);
+    const currency = this.extractCurrency(cleanedLower);
+    const paymentMethod = this.extractPaymentMethod(cleanedLower);
     const cardIdentifier = paymentMethod === 'card'
-      ? this.extractCardIdentifier(normalized, amount)
+      ? this.extractCardIdentifier(cleanedLower, amount)
       : undefined;
 
-    return { amount, description, currency, paymentMethod, cardIdentifier };
+    return { amount, description, currency, paymentMethod, cardIdentifier, categoryName, merchantName, transactionDate };
   }
 
   suggestCategory(text: string): string | null {
@@ -141,5 +152,66 @@ export class WhatsappMessageParser {
     }
 
     return undefined;
+  }
+
+  private static readonly KV_KEYS = ['categoria', 'cat', 'negocio', 'comercio', 'fecha', 'tag', 'etiqueta'];
+
+  private extractKeyValue(text: string, keys: string[]): string | undefined {
+    for (const key of keys) {
+      const pattern = new RegExp(
+        `\\b${key}\\s*:\\s*(.+?)(?=\\s+(?:${WhatsappMessageParser.KV_KEYS.join('|')})\\s*:|$)`,
+        'i',
+      );
+      const match = text.match(pattern);
+      if (match) {
+        return match[1].trim();
+      }
+    }
+    return undefined;
+  }
+
+  private extractDate(text: string): string | undefined {
+    const raw = this.extractKeyValue(text, ['fecha']);
+    if (!raw) return undefined;
+
+    const now = new Date();
+    let day: number, month: number, year: number = now.getFullYear();
+
+    const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (iso) {
+      year = parseInt(iso[1], 10);
+      month = parseInt(iso[2], 10);
+      day = parseInt(iso[3], 10);
+    } else {
+      const dmy = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (dmy) {
+        day = parseInt(dmy[1], 10);
+        month = parseInt(dmy[2], 10);
+        if (dmy[3]) {
+          year = parseInt(dmy[3], 10);
+          if (year < 100) year += 2000;
+        }
+      } else {
+        return undefined;
+      }
+    }
+
+    if (month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+
+    const date = new Date(year, month - 1, day);
+    if (isNaN(date.getTime())) return undefined;
+    if (date > now) return undefined;
+
+    return date.toISOString();
+  }
+
+  private stripKeyValues(text: string): string {
+    return text.replace(
+      new RegExp(
+        `\\b(?:${WhatsappMessageParser.KV_KEYS.join('|')})\\s*:\\s*.+?(?=\\s+(?:${WhatsappMessageParser.KV_KEYS.join('|')})\\s*:|$)`,
+        'gi',
+      ),
+      '',
+    ).trim();
   }
 }
