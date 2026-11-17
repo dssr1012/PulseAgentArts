@@ -616,7 +616,7 @@ class ApiClient {
 
   async getAiDashboard(circleId: string, refresh = false) {
     const response = await this.client.get(`/circles/${circleId}/ai-dashboard`, {
-      params: { refresh },
+      params: { refresh }, timeout: 180000,
     });
     return response.data;
   }
@@ -624,7 +624,7 @@ class ApiClient {
   // ============ Copilot API ============
 
   async askCopilot(circleId: string, question: string) {
-    const response = await this.client.post(`/circles/${circleId}/copilot`, { question });
+    const response = await this.client.post(`/circles/${circleId}/copilot`, { question }, { timeout: 180000 });
     return response.data as { text: string; widgets?: any[] };
   }
 
