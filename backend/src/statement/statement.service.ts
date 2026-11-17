@@ -152,6 +152,32 @@ export class StatementService {
         },
       });
 
+      // Auto-populate card metadata from statement
+      const cardUpdate: any = {};
+      if (parsed.creditLimit !== undefined && parsed.creditLimit > 0) {
+        cardUpdate.creditLimit = parsed.creditLimit;
+      }
+      if (parsed.financingRate !== undefined && parsed.financingRate > 0) {
+        cardUpdate.financingRate = parsed.financingRate;
+      }
+      // Infer closing and due days from statement dates
+      const closingDay = parsed.closingDate.getDate();
+      const dueDay = parsed.dueDate.getDate();
+      if (closingDay >= 1 && closingDay <= 31) {
+        cardUpdate.closingDay = closingDay;
+      }
+      if (dueDay >= 1 && dueDay <= 31) {
+        cardUpdate.dueDay = dueDay;
+      }
+
+      if (Object.keys(cardUpdate).length > 0) {
+        await this.prisma.creditCard.update({
+          where: { id: cardId },
+          data: cardUpdate,
+        });
+        this.logger.log(`Auto-populated card ${cardId} metadata: ${JSON.stringify(cardUpdate)}`);
+      }
+
       if (parsed.items.length > 0) {
         await this.prisma.statementItem.createMany({
           data: parsed.items.map((item) => ({

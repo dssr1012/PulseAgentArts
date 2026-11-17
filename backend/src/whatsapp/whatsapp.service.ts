@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
 import { TransactionService } from '../transaction/transaction.service';
 import { WhatsappMessageParser } from './whatsapp-message.parser';
+import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as QRCode from 'qrcode';
@@ -27,6 +28,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private config: ConfigService,
     private transactionService: TransactionService,
     private messageParser: WhatsappMessageParser,
+    private llmOrchestrator: LlmOrchestratorService,
   ) {
     this.authDir = this.config.get<string>('WHATSAPP_AUTH_DIR', './whatsapp-auth');
     if (!fs.existsSync(this.authDir)) {
@@ -212,17 +214,56 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
       if (!text.trim()) continue;
 
-      const parsed = this.messageParser.parse(text);
+      // Fetch user and circle info early (needed for LLM fallback)
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { circleMemberships: true },
+      });
+      if (!user?.circleMemberships || user.circleMemberships.length === 0) continue;
+      const circleId = user.circleMemberships[0].groupId;
+
+      // Hybrid parsing: regex first, LLM fallback
+      let parsed = this.messageParser.parse(text);
+
+      if (!parsed) {
+        // Regex parser failed — try LLM
+        try {
+          const categories = await this.prisma.category.findMany({
+            where: { groupId: circleId },
+            select: { name: true },
+          });
+          const cards = await this.prisma.creditCard.findMany({
+            where: { groupId: circleId },
+            select: { tag: true, lastFourDigits: true, bankName: true },
+          });
+
+          const llmParsed = await this.llmOrchestrator.parseExpenseMessage(
+            text,
+            categories.map((c) => c.name),
+            cards.map((c) => ({ ...c, tag: c.tag || undefined })),
+          );
+
+          if (llmParsed && llmParsed.amount > 0 && llmParsed.confidence >= 0.5) {
+            parsed = {
+              amount: llmParsed.amount,
+              description: llmParsed.description || 'Gasto WhatsApp',
+              currency: llmParsed.currency,
+              paymentMethod: llmParsed.paymentMethod || 'cash',
+              cardIdentifier: llmParsed.cardIdentifier,
+              categoryName: llmParsed.category,
+              merchantName: llmParsed.merchantName,
+              transactionDate: llmParsed.transactionDate,
+            };
+            this.logger.log(`LLM parsed expense from WhatsApp: ${parsed.amount} ${parsed.currency} (confidence: ${llmParsed.confidence})`);
+          }
+        } catch (llmErr) {
+          this.logger.warn(`LLM fallback parsing failed: ${llmErr.message}`);
+        }
+      }
+
       if (!parsed) continue;
 
       try {
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          include: { circleMemberships: true },
-        });
-        if (!user?.circleMemberships || user.circleMemberships.length === 0) continue;
-
-        const circleId = user.circleMemberships[0].groupId;
         const categoryId = await this.resolveCategory(userId, circleId, text, parsed.categoryName);
 
         const senderName = msg.key?.fromMe

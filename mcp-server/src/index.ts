@@ -256,6 +256,84 @@ function createServer(): McpServer {
     },
   );
 
+  server.tool(
+    'get_projection',
+    'Get a 12-month financial projection showing projected income, expenses, card balances, and surplus for each month. Helps answer "can I pay my cards?" and "when can I start investing?"',
+    {
+      months: z.number().int().min(1).max(24).optional().describe('Number of months to project (default 12, max 24)'),
+    },
+    async ({ months }) => {
+      try {
+        const circleId = await getCircleId();
+        const query = months ? `?months=${months}` : '';
+        const result = await apiCall(`/circles/${circleId}/projection${query}`);
+        return textResult(result);
+      } catch (error: any) {
+        return errorResult('API_ERROR', error.message);
+      }
+    },
+  );
+
+  server.tool(
+    'get_payment_strategy',
+    'Get payment strategy recommendations for credit cards. Given available cash, calculates optimal payment distribution across cards using avalanche (highest rate first), snowball (lowest balance first), and proportional methods. Shows total interest and months to debt-free for each scenario.',
+    {
+      available_cash: z.number().positive().describe('Total cash available for card payments this month'),
+    },
+    async ({ available_cash }) => {
+      try {
+        const circleId = await getCircleId();
+        const result = await apiCall(`/circles/${circleId}/payment-strategy?availableCash=${available_cash}`);
+        return textResult(result);
+      } catch (error: any) {
+        return errorResult('API_ERROR', error.message);
+      }
+    },
+  );
+
+  server.tool(
+    'get_investment_suggestions',
+    'Get investment suggestions based on projected surplus. Considers current investments (MERVAL, bonos) and suggests options like CDR, plazo fijo, etc. when surplus is available.',
+    {},
+    async () => {
+      try {
+        const circleId = await getCircleId();
+        const result = await apiCall(`/circles/${circleId}/investment-suggestions`);
+        return textResult(result);
+      } catch (error: any) {
+        return errorResult('API_ERROR', error.message);
+      }
+    },
+  );
+
+  server.tool(
+    'list_recurring_transactions',
+    'List all active recurring transactions (automatic debits, subscriptions, installments) for your Family Circle. Useful for understanding fixed monthly obligations.',
+    {},
+    async () => {
+      try {
+        const result = await apiCall('/recurring');
+        return textResult(result.data || result);
+      } catch (error: any) {
+        return errorResult('API_ERROR', error.message);
+      }
+    },
+  );
+
+  server.tool(
+    'list_cards',
+    'List all credit/debit cards registered in your Family Circle with their metadata (credit limit, financing rate, closing/due days).',
+    {},
+    async () => {
+      try {
+        const result = await apiCall('/cards');
+        return textResult(result.data || result);
+      } catch (error: any) {
+        return errorResult('API_ERROR', error.message);
+      }
+    },
+  );
+
   return server;
 }
 

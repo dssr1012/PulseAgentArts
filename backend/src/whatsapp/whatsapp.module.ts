@@ -3,9 +3,11 @@ import { WhatsappController } from './whatsapp.controller';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappMessageParser } from './whatsapp-message.parser';
 import { TransactionModule } from '../transaction/transaction.module';
+import { LlmModule } from '../llm/llm.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [TransactionModule],
+  imports: [TransactionModule, LlmModule, CommonModule],
   controllers: [WhatsappController],
   providers: [WhatsappService, WhatsappMessageParser],
   exports: [WhatsappService],

@@ -17,6 +17,8 @@ import { RegexDictModule } from './regex-dict/regex-dict.module';
 import { AuditModule } from './audit/audit.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { RecurringModule } from './recurring/recurring.module';
+import { LlmModule } from './llm/llm.module';
+import { ProjectionModule } from './projection/projection.module';
 import { CommonModule } from './common/common.module';
 import { LoggerModule } from './common/logger/logger.module';
 
@@ -44,6 +46,8 @@ import { LoggerModule } from './common/logger/logger.module';
     AuditModule,
     WhatsappModule,
     RecurringModule,
+    LlmModule,
+    ProjectionModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

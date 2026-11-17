@@ -92,6 +92,8 @@ export class PdfStatementParser implements IStatementParser {
     const totalAmount = this.extractTotalAmount(text);
     const minPayment = this.extractMinPayment(text);
     const items = this.extractLineItems(lines);
+    const creditLimit = this.extractCreditLimit(text);
+    const financingRate = this.extractFinancingRate(text);
 
     return {
       closingDate,
@@ -100,6 +102,8 @@ export class PdfStatementParser implements IStatementParser {
       minPayment,
       currency: 'ARS',
       items,
+      creditLimit,
+      financingRate,
     };
   }
 
@@ -150,6 +154,40 @@ export class PdfStatementParser implements IStatementParser {
       if (amt !== null) return amt;
     }
     return 0;
+  }
+
+  private extractCreditLimit(text: string): number | undefined {
+    // Try "LIMITES DE CONSUMO" or "LIMITE" patterns
+    const patterns = [
+      /LIMITES?\s*(?:DE\s*CONSUMO)?\s*:?\s*\$\s*([\d.,]+)/i,
+      /LIMITE\s+(?:DE\s+)?(?:CREDITO|CONSUMO)\s*:?\s*\$\s*([\d.,]+)/i,
+      /MONTO\s+MAXIMO\s*:?\s*\$\s*([\d.,]+)/i,
+    ];
+    for (const pattern of patterns) {
+      const m = text.match(pattern);
+      if (m) {
+        const amt = this.parseAmount(m[1]);
+        if (amt !== null && amt > 0) return amt;
+      }
+    }
+    return undefined;
+  }
+
+  private extractFinancingRate(text: string): number | undefined {
+    // Try TNA (Tasa Nominal Anual) patterns
+    const patterns = [
+      /TNA\s*:?\s*([\d.,]+)\s*%/i,
+      /TASA\s+NOMINAL\s+ANUAL\s*:?\s*([\d.,]+)\s*%/i,
+      /TASA\s+DE\s+INTERES\s*:?\s*([\d.,]+)\s*%/i,
+    ];
+    for (const pattern of patterns) {
+      const m = text.match(pattern);
+      if (m) {
+        const rate = this.parseAmount(m[1]);
+        if (rate !== null && rate > 0) return rate;
+      }
+    }
+    return undefined;
   }
 
   private parseAmount(raw: string): number | null {

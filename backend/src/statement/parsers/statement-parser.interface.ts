@@ -5,6 +5,9 @@ export interface ParsedStatement {
   minPayment: number;
   currency: string;
   items: ParsedStatementItem[];
+  // Card metadata extracted from statement
+  creditLimit?: number;
+  financingRate?: number;  // Annual TNA %
 }
 
 export interface ParsedStatementItem {
