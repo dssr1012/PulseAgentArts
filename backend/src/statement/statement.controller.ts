@@ -78,6 +78,12 @@ export class CardStatementController {
 
   @Get(':cardId/statements')
   @ApiOperation({ summary: 'List statements for a credit card' })
+  async listStatements(
+    @Param('cardId') cardId: string,
+    @CurrentUser('circleId') circleId: string,
+  ) {
+    return this.statementService.listStatements(cardId, circleId);
+  }
 
   @Delete(':cardId/statements/:statementId')
   @ApiOperation({ summary: 'Delete a statement and its items' })
@@ -86,11 +92,5 @@ export class CardStatementController {
     @Param('statementId') statementId: string,
   ) {
     return this.statementService.deleteStatement(cardId, statementId);
-  }
-  async listStatements(
-    @Param('cardId') cardId: string,
-    @CurrentUser('circleId') circleId: string,
-  ) {
-    return this.statementService.listStatements(cardId, circleId);
   }
 }
