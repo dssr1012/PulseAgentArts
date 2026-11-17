@@ -31,6 +31,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   (app as any).disable('x-powered-by');
+  (app as any).set('trust proxy', 1);
 
   const pinoLogger = app.get(PinoLoggerService);
   app.useLogger(pinoLogger);

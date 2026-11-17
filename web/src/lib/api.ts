@@ -63,7 +63,23 @@ class ApiClient {
         return response;
       },
       async (error: AxiosError<ApiError>) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & {
+          _retry?: boolean;
+          _retry429?: number;
+        };
+
+        // Retry on 429 (Too Many Requests) with exponential backoff.
+        // The SPA fires 3-6 requests per page load; without retry, a single
+        // 429 breaks the page. Retry up to 3 times with 500ms, 1s, 2s delays.
+        if (error.response?.status === 429) {
+          const attempt = originalRequest._retry429 ?? 0;
+          if (attempt < 3) {
+            originalRequest._retry429 = attempt + 1;
+            const delayMs = 500 * Math.pow(2, attempt);
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            return this.client(originalRequest);
+          }
+        }
 
         // Don't attempt token refresh for auth endpoints — a 401 here means
         // invalid credentials, not an expired token. Let it fall through to

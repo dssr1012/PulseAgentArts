@@ -27,7 +27,7 @@ import { LoggerModule } from './common/logger/logger.module';
       envFilePath: ['.env', '../.env'],
     }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 200 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 2000 }]),
     LoggerModule,
     CommonModule,
     AuthModule,
