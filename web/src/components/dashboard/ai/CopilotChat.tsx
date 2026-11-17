@@ -58,13 +58,13 @@ export function CopilotChat() {
     setIsLoading(true);
 
     try {
-      const { jobId } = await apiClient.askCopilot(activeCircleId, q);
+      const { job_id } = await apiClient.askCopilot(activeCircleId, q);
 
       const maxPolls = 90;
       const pollInterval = 2000;
       for (let i = 0; i < maxPolls; i++) {
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
-        const result = await apiClient.getCopilotResult(activeCircleId, jobId);
+        const result = await apiClient.getCopilotResult(activeCircleId, job_id);
         if (result.status === 'done') {
           const assistantMsg: Message = {
             id: `a-${Date.now()}`,

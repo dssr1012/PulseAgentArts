@@ -625,7 +625,7 @@ class ApiClient {
 
   async askCopilot(circleId: string, question: string) {
     const response = await this.client.post(`/circles/${circleId}/copilot`, { question });
-    return response.data as { jobId: string };
+    return response.data as { job_id: string };
   }
 
   async getCopilotResult(circleId: string, jobId: string) {
