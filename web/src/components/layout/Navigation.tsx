@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   RefreshCw,
+  CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -39,6 +40,7 @@ export function Sidebar() {
     { href: '/incomes', labelKey: 'nav.incomes', icon: <TrendingUp className="h-5 w-5" /> },
     { href: '/cards', labelKey: 'nav.cards', icon: <CreditCard className="h-5 w-5" /> },
     { href: '/recurring', labelKey: 'nav.recurring', icon: <RefreshCw className="h-5 w-5" /> },
+    { href: '/payment-plan', labelKey: 'nav.paymentPlan', icon: <CalendarClock className="h-5 w-5" /> },
     { href: '/circle', labelKey: 'nav.familyCircle', icon: <Users className="h-5 w-5" /> },
     { href: '/categories', labelKey: 'nav.categories', icon: <Tag className="h-5 w-5" /> },
     { href: '/anomalies', labelKey: 'nav.anomalies', icon: <AlertTriangle className="h-5 w-5" />, badge: 0 },
@@ -186,6 +188,8 @@ export function MobileHeader() {
     '/transactions': 'nav.transactions',
     '/incomes': 'nav.incomes',
     '/cards': 'nav.cardsStatements',
+    '/recurring': 'nav.recurring',
+    '/payment-plan': 'nav.paymentPlan',
     '/circle': 'nav.familyCircle',
     '/categories': 'nav.categories',
     '/anomalies': 'nav.anomalyAlerts',

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Sidebar, BottomNav, MobileHeader } from '@/components/layout/Navigation';
+import { CopilotChat } from '@/components/dashboard/ai/CopilotChat';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom navigation */}
       <BottomNav />
+
+      {/* AI Copilot — mounted here to persist across page navigation */}
+      <CopilotChat />
     </div>
   );
 }

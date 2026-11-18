@@ -19,6 +19,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { RecurringModule } from './recurring/recurring.module';
 import { LlmModule } from './llm/llm.module';
 import { ProjectionModule } from './projection/projection.module';
+import { PaymentPlanModule } from './payment-plan/payment-plan.module';
 import { CommonModule } from './common/common.module';
 import { LoggerModule } from './common/logger/logger.module';
 
@@ -48,6 +49,7 @@ import { LoggerModule } from './common/logger/logger.module';
     RecurringModule,
     LlmModule,
     ProjectionModule,
+    PaymentPlanModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

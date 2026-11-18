@@ -44,13 +44,19 @@ export function CategoryChart({ categories, breakdown }: CategoryChartProps) {
     );
   }
 
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number }> }) => {
     if (active && payload && payload.length) {
+      const percentage = total > 0 ? (payload[0].value / total) * 100 : 0;
       return (
         <div className="rounded-lg bg-white p-3 shadow-lg border border-gray-100">
           <p className="text-sm font-medium text-gray-900">{payload[0].name}</p>
           <p className="text-sm text-pulse-red-500 font-semibold">
             ${payload[0].value.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-gray-500">
+            {percentage.toFixed(1)}% {t('dashboard.ofTotalExpenses')}
           </p>
         </div>
       );

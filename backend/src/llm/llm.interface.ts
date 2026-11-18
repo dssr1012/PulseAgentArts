@@ -7,6 +7,8 @@ export type LlmTask =
   | 'payment_strategy'
   | 'investment_advice'
   | 'dashboard_design'
+  | 'payment_recommendation'
+  | 'deviation_analysis'
   | 'general_chat';
 
 export interface LlmMessage {
@@ -79,11 +81,23 @@ export const MODEL_ROUTING: Record<LlmTask, LlmModelConfig> = {
     maxTokens: 2000,
     temperature: 0.4,
   },
-  // Best model for dashboard design (needs JSON output with chart specs)
+  // Fast model for dashboard design — widget selection + JSON formatting, no reasoning needed
   dashboard_design: {
-    modelId: 'glm-5.2',
+    modelId: 'deepseek-v4.1-flash-1017',
     maxTokens: 4000,
     temperature: 0.3,
+  },
+  // Best model for payment plan recommendation — needs reasoning + JSON
+  payment_recommendation: {
+    modelId: 'glm-5.2',
+    maxTokens: 3000,
+    temperature: 0.3,
+  },
+  // Best model for deviation analysis — needs reasoning about financial discrepancies
+  deviation_analysis: {
+    modelId: 'glm-5.2',
+    maxTokens: 2000,
+    temperature: 0.4,
   },
   // Mid-tier for general chat
   general_chat: {

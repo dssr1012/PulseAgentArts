@@ -58,7 +58,8 @@
     "alerts": "Alertas",
     "cardsStatements": "Tarjetas y Resúmenes",
     "anomalyAlerts": "Alertas de Anomalías",
-    "familyExpenses": "Gastos Familiares"
+    "familyExpenses": "Gastos Familiares",
+    "paymentPlan": "Plan de Pago"
   },
   "settings": {
     "title": "Configuración",
@@ -156,6 +157,11 @@
     "addExpense": "Agregar Gasto",
     "addIncome": "Agregar Ingreso"
   },
+  "aiDashboard": {
+    "loadFailed": "Error al cargar el panel inteligente.",
+    "generating": "Generando tu panel personalizado...",
+    "refresh": "Actualizar"
+  },
   "transactions": {
     "title": "Transacciones",
     "totalTransactions": "transacciones en total",
@@ -241,11 +247,7 @@
     "deletedWithExpenses2": "gasto(s) marcados para revisión — editálos para normalizar.",
     "deletedSuccess": "Tarjeta eliminada exitosamente.",
     "deleteFailed": "Error al eliminar tarjeta.",
-    "statementsLoadFailed": "Error al cargar resúmenes.",
-    "confirmDeleteStatement": "¿Seguro que querés eliminar este resumen? Se borrarán todos los movimientos asociados.",
-    "statementDeleted": "Resumen eliminado correctamente",
-    "statementDeleteFailed": "No se pudo eliminar el resumen",
-    "deleteStatement": "Eliminar resumen"
+    "statementsLoadFailed": "Error al cargar resúmenes."
   },
   "anomalies": {
     "title": "Alertas de Anomalías",
@@ -372,6 +374,65 @@
     "deleteFailed": "Error al eliminar.",
     "pause": "Pausar",
     "resume": "Reanudar"
+  },
+  "paymentPlan": {
+    "title": "Plan de Pago Mensual",
+    "subtitle": "Generá el plan, cargá lo pagado y compará los desvíos",
+    "generate": "Generar Plan",
+    "regenerate": "Regenerar",
+    "generateTitle": "Generar Plan de Pago",
+    "noPlan": "No hay plan de pago para este mes",
+    "noPlanDesc": "Generá un plan de pago para organizar tus tarjetas y gastos recurrentes del mes. El sistema elige la mejor estrategia de pago y guarda la proyección para comparar.",
+    "availableCashLabel": "Efectivo disponible para pagar",
+    "availableCashHint": "Cuánto dinero tenés disponible este mes para pagar tarjetas y gastos.",
+    "availableCash": "Efectivo disponible",
+    "invalidCash": "Ingresá un monto válido.",
+    "invalidAmount": "Ingresá un monto válido.",
+    "generated": "Plan de pago generado y proyección guardada.",
+    "generateFailed": "Error al generar el plan.",
+    "loadFailed": "Error al cargar el plan de pago.",
+    "totalPlanned": "Total planificado",
+    "totalPaid": "Total pagado",
+    "deviation": "Desvío total",
+    "deviationHint": "Planificado - pagado",
+    "completion": "Completado",
+    "itemsPaid": "items pagados",
+    "scenario": "Estrategia",
+    "item": "Item",
+    "due": "Vencimiento",
+    "planned": "Planificado",
+    "actual": "Pagado",
+    "fullPayment": "Pago total",
+    "enterPaid": "Cargar pago",
+    "confirmPaid": "Confirmar pago",
+    "unmarkPaid": "Desmarcar pago",
+    "markedPaid": "Pago registrado.",
+    "unmarkedPaid": "Pago desmarcado.",
+    "markPaidFailed": "Error al registrar pago.",
+    "underpaidAlert": "¡Atención! Pagaste menos de lo planificado",
+    "underpaidDesc": "Te falta pagar {amount} para completar el plan.",
+    "projectionSnapshot": "Proyección guardada (12 meses)",
+    "noProjection": "No hay proyección guardada para este mes.",
+    "projectionLoadFailed": "Error al cargar la proyección.",
+    "month": "Mes",
+    "income": "Ingresos",
+    "expenses": "Gastos",
+    "cardPayments": "Pagos tarjetas",
+    "netFlow": "Flujo neto",
+    "suggestionHint": "Sugerido: ingresos {income} - gastos {expenses} - 5% reserva {buffer} = {suggested}",
+    "useSuggestion": "Usar sugerido",
+    "loadingOptions": "Cargando opciones...",
+    "llmOption": "Recomendación IA",
+    "strategiesOption": "Estrategias",
+    "totalRecommended": "Total recomendado",
+    "interest": "Interés",
+    "monthsToDebtFree": "Meses para cancelar",
+    "llmReasoningTitle": "Razonamiento IA",
+    "deviationAnalysis": "Análisis de Desvíos",
+    "analyzeDeviations": "Analizar desvíos",
+    "reanalyze": "Re-analizar",
+    "analyzing": "Analizando desvíos...",
+    "analysisFailed": "Error al analizar desvíos."
   },
   "login": {
     "appName": "PulseExpends",
@@ -504,26 +565,5 @@
     "incomeAdded": "Ingreso agregado exitosamente.",
     "saveFailed": "Error al guardar transacción.",
     "toggleGiftHidden": "Alternar modo regalo oculto"
-  },
-  "aiDashboard": {
-    "title": "Panel Inteligente",
-    "refresh": "Actualizar análisis",
-    "generating": "Analizando tus finanzas...",
-    "loadFailed": "No se pudo cargar el panel inteligente",
-    "insight": "Insight"
-  },
-  "copilot": {
-    "title": "Asistente Financiero",
-    "subtitle": "Preguntame sobre tus finanzas",
-    "open": "Abrir asistente",
-    "close": "Cerrar",
-    "askCopilot": "Preguntar",
-    "welcome": "Hola! Soy tu asistente financiero. Preguntame sobre tus gastos, proyecciones, estrategias de pago o cualquier duda sobre tus finanzas.",
-    "suggestions": "Preguntas sugeridas:",
-    "placeholder": "Escribi tu pregunta...",
-    "send": "Enviar",
-    "thinking": "Pensando...",
-    "error": "No se pudo conectar con el asistente",
-    "errorResponse": "Lo siento, no pude procesar tu pregunta. Intenta de nuevo."
   }
 }

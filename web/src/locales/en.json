@@ -58,7 +58,8 @@
     "alerts": "Alerts",
     "cardsStatements": "Cards & Statements",
     "anomalyAlerts": "Anomaly Alerts",
-    "familyExpenses": "Family Expenses"
+    "familyExpenses": "Family Expenses",
+    "paymentPlan": "Payment Plan"
   },
   "settings": {
     "title": "Settings",
@@ -156,6 +157,11 @@
     "addExpense": "Add Expense",
     "addIncome": "Add Income"
   },
+  "aiDashboard": {
+    "loadFailed": "Failed to load AI dashboard.",
+    "generating": "Generating your personalized dashboard...",
+    "refresh": "Refresh"
+  },
   "transactions": {
     "title": "Transactions",
     "totalTransactions": "total transactions",
@@ -241,11 +247,7 @@
     "deletedWithExpenses2": "expense(s) marked for review — please edit them to normalize.",
     "deletedSuccess": "Card deleted successfully.",
     "deleteFailed": "Failed to delete card.",
-    "statementsLoadFailed": "Failed to load statements.",
-    "confirmDeleteStatement": "Are you sure you want to delete this statement? All associated charges will be removed.",
-    "statementDeleted": "Statement deleted successfully",
-    "statementDeleteFailed": "Could not delete the statement",
-    "deleteStatement": "Delete statement"
+    "statementsLoadFailed": "Failed to load statements."
   },
   "anomalies": {
     "title": "Anomaly Alerts",
@@ -372,6 +374,65 @@
     "deleteFailed": "Failed to delete.",
     "pause": "Pause",
     "resume": "Resume"
+  },
+  "paymentPlan": {
+    "title": "Monthly Payment Plan",
+    "subtitle": "Generate the plan, load what you paid, and compare deviations",
+    "generate": "Generate Plan",
+    "regenerate": "Regenerate",
+    "generateTitle": "Generate Payment Plan",
+    "noPlan": "No payment plan for this month",
+    "noPlanDesc": "Generate a payment plan to organize your cards and recurring expenses for the month. The system picks the best payment strategy and saves the projection for comparison.",
+    "availableCashLabel": "Available cash to pay",
+    "availableCashHint": "How much money you have available this month to pay cards and expenses.",
+    "availableCash": "Available cash",
+    "invalidCash": "Enter a valid amount.",
+    "invalidAmount": "Enter a valid amount.",
+    "generated": "Payment plan generated and projection saved.",
+    "generateFailed": "Failed to generate plan.",
+    "loadFailed": "Failed to load payment plan.",
+    "totalPlanned": "Total planned",
+    "totalPaid": "Total paid",
+    "deviation": "Total deviation",
+    "deviationHint": "Planned - paid",
+    "completion": "Completed",
+    "itemsPaid": "items paid",
+    "scenario": "Strategy",
+    "item": "Item",
+    "due": "Due",
+    "planned": "Planned",
+    "actual": "Paid",
+    "fullPayment": "Full payment",
+    "enterPaid": "Enter payment",
+    "confirmPaid": "Confirm payment",
+    "unmarkPaid": "Unmark paid",
+    "markedPaid": "Payment recorded.",
+    "unmarkedPaid": "Payment unmarked.",
+    "markPaidFailed": "Failed to record payment.",
+    "underpaidAlert": "Attention! You paid less than planned",
+    "underpaidDesc": "You still need to pay {amount} to complete the plan.",
+    "projectionSnapshot": "Saved projection (12 months)",
+    "noProjection": "No projection saved for this month.",
+    "projectionLoadFailed": "Failed to load projection.",
+    "month": "Month",
+    "income": "Income",
+    "expenses": "Expenses",
+    "cardPayments": "Card payments",
+    "netFlow": "Net flow",
+    "suggestionHint": "Suggested: income {income} - expenses {expenses} - 5% buffer {buffer} = {suggested}",
+    "useSuggestion": "Use suggested",
+    "loadingOptions": "Loading options...",
+    "llmOption": "AI Recommendation",
+    "strategiesOption": "Strategies",
+    "totalRecommended": "Total recommended",
+    "interest": "Interest",
+    "monthsToDebtFree": "Months debt-free",
+    "llmReasoningTitle": "AI Reasoning",
+    "deviationAnalysis": "Deviation Analysis",
+    "analyzeDeviations": "Analyze deviations",
+    "reanalyze": "Re-analyze",
+    "analyzing": "Analyzing deviations...",
+    "analysisFailed": "Failed to analyze deviations."
   },
   "login": {
     "appName": "PulseExpends",
@@ -504,26 +565,5 @@
     "incomeAdded": "Income added successfully.",
     "saveFailed": "Failed to save transaction.",
     "toggleGiftHidden": "Toggle gift hidden mode"
-  },
-  "aiDashboard": {
-    "title": "AI Dashboard",
-    "refresh": "Refresh analysis",
-    "generating": "Analyzing your finances...",
-    "loadFailed": "Failed to load AI dashboard",
-    "insight": "Insight"
-  },
-  "copilot": {
-    "title": "Financial Assistant",
-    "subtitle": "Ask me about your finances",
-    "open": "Open assistant",
-    "close": "Close",
-    "askCopilot": "Ask",
-    "welcome": "Hi! I am your financial assistant. Ask me about your expenses, projections, payment strategies or any question about your finances.",
-    "suggestions": "Suggested questions:",
-    "placeholder": "Type your question...",
-    "send": "Send",
-    "thinking": "Thinking...",
-    "error": "Could not connect to assistant",
-    "errorResponse": "Sorry, I could not process your question. Try again."
   }
 }

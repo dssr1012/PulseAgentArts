@@ -8,7 +8,7 @@ import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CircleMembershipGuard } from '../auth/guards/circle-membership.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { IsOptional, IsInt, IsNumber, Min, Max, IsBoolean } from 'class-validator';
+import { IsOptional, IsInt, IsNumber, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ProjectionQueryDto {
@@ -29,8 +29,8 @@ class StrategyQueryDto {
 
 class DashboardQueryDto {
   @IsOptional()
-  @IsBoolean()
-  refresh?: boolean;
+  @IsString()
+  refresh?: string;
 }
 
 @ApiTags('Projection')
@@ -129,7 +129,7 @@ export class ProjectionController {
     @Param('id') circleId: string,
     @Query() query: DashboardQueryDto,
   ) {
-    return this.aiDashboardService.getDashboard(circleId, query.refresh === true);
+    return this.aiDashboardService.getDashboard(circleId, query.refresh === 'true');
   }
 
   @Post(':id/copilot')

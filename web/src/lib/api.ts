@@ -612,38 +612,90 @@ class ApiClient {
     return response.data;
   }
 
-  // ============ AI Dashboard API ============
-
-  async getAiDashboard(circleId: string, refresh = false) {
-    const response = await this.client.get(`/circles/${circleId}/ai-dashboard`, {
-      params: { refresh }, timeout: 180000,
-    });
-    return response.data;
-  }
-
-  // ============ Copilot API ============
-
-  async askCopilot(circleId: string, question: string) {
-    const response = await this.client.post(`/circles/${circleId}/copilot`, { question });
-    return response.data as { job_id: string };
-  }
-
-  async getCopilotResult(circleId: string, jobId: string) {
-    const response = await this.client.get(`/circles/${circleId}/copilot/result/${jobId}`);
-    return response.data as { status: string; text?: string; widgets?: any[] };
-  }
-
-  // ============ Statement Deletion API ============
-
-  async deleteStatement(cardId: string, statementId: string) {
-    const response = await this.client.delete(`/cards/${cardId}/statements/${statementId}`);
-    return response.data;
-  }
-
   // ============ Exchange Rate API ============
 
   async getExchangeRates() {
     const response = await this.client.get('/exchange-rates');
+    return response.data;
+  }
+
+  // ============ Payment Plan API ============
+
+  async generatePaymentPlan(circleId: string, availableCash: number, scenario?: string, saveProjection = true) {
+    const response = await this.client.post(`/circles/${circleId}/payment-plans/generate`, {
+      available_cash: availableCash,
+      scenario,
+      save_projection: saveProjection,
+    });
+    return response.data;
+  }
+
+  async getCurrentPaymentPlan(circleId: string) {
+    const response = await this.client.get(`/circles/${circleId}/payment-plans/current`);
+    return response.data;
+  }
+
+  async listPaymentPlans(circleId: string) {
+    const response = await this.client.get(`/circles/${circleId}/payment-plans`);
+    return response.data;
+  }
+
+  async getPaymentPlan(circleId: string, planId: string) {
+    const response = await this.client.get(`/circles/${circleId}/payment-plans/${planId}`);
+    return response.data;
+  }
+
+  async updatePaymentPlanItem(circleId: string, planId: string, itemId: string, data: { actual_amount?: number; is_paid?: boolean; notes?: string }) {
+    const response = await this.client.patch(`/circles/${circleId}/payment-plans/${planId}/items/${itemId}`, data);
+    return response.data;
+  }
+
+  async markPaymentPlanItemPaid(circleId: string, planId: string, itemId: string, actualAmount: number, notes?: string) {
+    const response = await this.client.post(`/circles/${circleId}/payment-plans/${planId}/items/${itemId}/mark-paid`, {
+      actual_amount: actualAmount,
+      notes,
+    });
+    return response.data;
+  }
+
+  async archivePaymentPlan(circleId: string, planId: string) {
+    const response = await this.client.post(`/circles/${circleId}/payment-plans/${planId}/archive`);
+    return response.data;
+  }
+
+  async getProjectionSnapshot(circleId: string, month: string) {
+    const response = await this.client.get(`/circles/${circleId}/projection-snapshot/${month}`);
+    return response.data;
+  }
+
+  async getAiDashboard(circleId: string, refresh = false) {
+    const response = await this.client.get(`/circles/${circleId}/ai-dashboard`, {
+      params: refresh ? { refresh: 'true' } : undefined,
+    });
+    return response.data;
+  }
+
+  async getAvailableCashSuggestion(circleId: string) {
+    const response = await this.client.get(`/circles/${circleId}/available-cash-suggestion`);
+    return response.data;
+  }
+
+  async getPaymentRecommendation(circleId: string, availableCash: number) {
+    const response = await this.client.get(`/circles/${circleId}/payment-recommendation`, {
+      params: { cash: availableCash },
+    });
+    return response.data;
+  }
+
+  async getPaymentStrategy(circleId: string, availableCash: number) {
+    const response = await this.client.get(`/circles/${circleId}/payment-strategy`, {
+      params: { availableCash },
+    });
+    return response.data;
+  }
+
+  async analyzeDeviation(circleId: string, planId: string) {
+    const response = await this.client.post(`/circles/${circleId}/payment-plans/${planId}/analyze-deviation`);
     return response.data;
   }
 }

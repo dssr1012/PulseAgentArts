@@ -14,7 +14,6 @@ import { TransactionFeed } from '@/components/dashboard/TransactionFeed';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { AiDashboard } from '@/components/dashboard/ai/AiDashboard';
-import { CopilotChat } from '@/components/dashboard/ai/CopilotChat';
 
 export default function DashboardPage() {
   const { user, activeCircleId } = useAuth();
@@ -166,8 +165,6 @@ export default function DashboardPage() {
       <QuickActions />
 
       <TransactionFeed transactions={transactions} />
-
-      <CopilotChat />
     </div>
   );
 }
