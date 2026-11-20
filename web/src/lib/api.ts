@@ -698,6 +698,16 @@ class ApiClient {
     const response = await this.client.post(`/circles/${circleId}/payment-plans/${planId}/analyze-deviation`);
     return response.data;
   }
+
+  async askCopilot(circleId: string, question: string) {
+    const response = await this.client.post(`/circles/${circleId}/copilot`, { question });
+    return response.data;
+  }
+
+  async getCopilotResult(circleId: string, jobId: string) {
+    const response = await this.client.get(`/circles/${circleId}/copilot/result/${jobId}`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
