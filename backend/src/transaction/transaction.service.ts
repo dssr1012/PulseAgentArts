@@ -397,7 +397,7 @@ export class TransactionService {
       select: { baseCurrency: true },
     });
 
-    const confirmedWhere = { groupId: circleId, confirmationStatus: 'confirmed' as const };
+    const confirmedWhere = { groupId: circleId };
 
     // Compute totals by type at the database level
     const totalsByType = await this.prisma.transaction.groupBy({
