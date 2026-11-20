@@ -31,7 +31,7 @@ export function ToastContainer() {
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm"
+      className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-sm"
       aria-live="polite"
       aria-label="Notifications"
     >

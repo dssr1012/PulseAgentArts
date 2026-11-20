@@ -67,6 +67,7 @@ enum RecurringFrequency {
 enum CardType {
   Visa
   Mastercard
+  AmericanExpress
 }
 
 enum PaymentMethod {
