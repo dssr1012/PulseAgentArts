@@ -343,27 +343,25 @@ export default function TransactionsPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <p className="text-sm text-gray-500">
-                {t('common.page')} {page} {t('common.of')} {Math.max(1, Math.ceil(filteredTransactions.length / pageSize))}
-              </p>
-              <div className="flex items-center gap-2">
-                <label htmlFor="page-size-select" className="text-sm text-gray-500">
-                  {t('common.rowsPerPage')}
-                </label>
-                <select
-                  id="page-size-select"
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-pulse-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <p className="text-sm text-gray-500">
+              {t('common.page')} {page} {t('common.of')} {Math.max(1, Math.ceil(filteredTransactions.length / pageSize))}
+            </p>
+            <div className="flex items-center gap-2">
+              <label htmlFor="page-size-select" className="text-sm text-gray-500">
+                {t('common.rowsPerPage')}
+              </label>
+              <select
+                id="page-size-select"
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-pulse-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
             </div>
             <div className="flex items-center gap-2">
               <button
