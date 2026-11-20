@@ -64,7 +64,6 @@ export class AiDashboardService {
     const recentTx = await this.prisma.transaction.findMany({
       where: {
         groupId: circleId,
-        confirmationStatus: 'confirmed',
         transactionDate: { gte: threeMonthsAgo },
       },
       select: { amount: true, type: true, currency: true },
