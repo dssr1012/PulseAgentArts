@@ -109,7 +109,7 @@ export function CopilotChat() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-pulse-blue-500 px-5 py-3 text-white shadow-lg hover:bg-pulse-blue-600 transition-colors"
+        className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-pulse-blue-500 px-5 py-3 text-white shadow-lg hover:bg-pulse-blue-600 transition-colors lg:bottom-6 lg:right-6"
         aria-label={t('copilot.open')}
       >
         <Sparkles className="h-5 w-5" />
@@ -119,7 +119,7 @@ export function CopilotChat() {
   }
 
   return (
-    <div className="fixed bottom-0 right-0 z-50 flex h-[600px] w-full max-w-md flex-col rounded-t-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 md:bottom-6 md:right-6 md:rounded-2xl">
+    <div className="fixed bottom-20 right-0 z-50 flex h-[600px] w-full max-w-md flex-col rounded-t-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-6 lg:right-6 lg:rounded-2xl">
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-pulse-blue-500" />

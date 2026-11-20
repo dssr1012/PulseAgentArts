@@ -47,13 +47,12 @@ export default function TransactionsPage() {
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<TransactionQuery>({ page: 1, limit: 20 });
   const [searchQuery, setSearchQuery] = useState('');
+  const [pageSize, setPageSize] = useState(20);
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'expense' | 'income'>('expense');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-
-  const LIMIT = 20;
 
   // Check for query param action
   useEffect(() => {
@@ -83,7 +82,7 @@ export default function TransactionsPage() {
 
       setAllTransactions(combined);
       setTotal(combined.length);
-      setTotalPages(Math.max(1, Math.ceil(combined.length / LIMIT)));
+      setTotalPages(Math.max(1, Math.ceil(combined.length / pageSize)));
       setCategories(categoriesData);
     } catch (err: unknown) {
       const error = err as { code?: string };
@@ -95,7 +94,7 @@ export default function TransactionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeCircleId, filters, addToast, router, t]);
+  }, [activeCircleId, filters, pageSize, addToast, router, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,7 +116,7 @@ export default function TransactionsPage() {
 
         setAllTransactions(combined);
         setTotal(combined.length);
-        setTotalPages(Math.max(1, Math.ceil(combined.length / LIMIT)));
+        setTotalPages(Math.max(1, Math.ceil(combined.length / pageSize)));
         setCategories(categoriesData);
       } catch (err: unknown) {
         const error = err as { code?: string };
@@ -133,7 +132,7 @@ export default function TransactionsPage() {
 
     doFetch();
     return () => { cancelled = true; };
-  }, [activeCircleId, filters, addToast, t]);
+  }, [activeCircleId, filters, pageSize, addToast, t]);
 
   const filteredTransactions = searchQuery
     ? allTransactions.filter(t =>
@@ -142,9 +141,9 @@ export default function TransactionsPage() {
       )
     : allTransactions;
 
-  const transactions = filteredTransactions.slice((page - 1) * LIMIT, page * LIMIT);
+  const transactions = filteredTransactions.slice((page - 1) * pageSize, page * pageSize);
 
-  useEffect(() => { setPage(1); }, [filters, searchQuery]);
+  useEffect(() => { setPage(1); }, [filters, searchQuery, pageSize]);
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('transactions.confirmDelete'))) return;
@@ -344,10 +343,26 @@ export default function TransactionsPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <p className="text-sm text-gray-500">
-              {t('common.page')} {page} {t('common.of')} {Math.max(1, Math.ceil(filteredTransactions.length / LIMIT))}
+              {t('common.page')} {page} {t('common.of')} {Math.max(1, Math.ceil(filteredTransactions.length / pageSize))}
             </p>
+            <div className="flex items-center gap-2">
+              <label htmlFor="page-size-select" className="text-sm text-gray-500">
+                {t('common.rowsPerPage')}
+              </label>
+              <select
+                id="page-size-select"
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-pulse-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(Math.max(1, page - 1))}
@@ -358,8 +373,8 @@ export default function TransactionsPage() {
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setPage(Math.min(Math.max(1, Math.ceil(filteredTransactions.length / LIMIT)), page + 1))}
-                disabled={page >= Math.ceil(filteredTransactions.length / LIMIT)}
+                onClick={() => setPage(Math.min(Math.max(1, Math.ceil(filteredTransactions.length / pageSize)), page + 1))}
+                disabled={page >= Math.ceil(filteredTransactions.length / pageSize)}
                 className="btn-ghost disabled:opacity-50"
                 aria-label="Next page"
               >
