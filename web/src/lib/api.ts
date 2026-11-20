@@ -415,9 +415,9 @@ class ApiClient {
     return response.data;
   }
 
-  async getBalance(circleId: string, consolidated = false) {
+  async getBalance(circleId: string, consolidated = false, period = 'month') {
     const response = await this.client.get(`/circles/${circleId}/balance`, {
-      params: { consolidated },
+      params: { consolidated, period },
     });
     return response.data;
   }
