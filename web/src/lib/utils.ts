@@ -6,14 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency: string): string {
-  const c = currency || 'ARS';
-  const amt = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
   const localeMap: Record<string, string> = {
     ARS: 'es-AR',
     USD: 'en-US',
     EUR: 'de-DE',
   };
-  const locale = localeMap[c] || 'en-US';
+  const c = localeMap[currency ?? ''] ? currency : 'ARS';
+  const amt = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  const locale = localeMap[c];
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: c,
