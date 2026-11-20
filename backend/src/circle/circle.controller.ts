@@ -5,7 +5,7 @@ import { CreateCircleDto, CreateInvitationDto } from './dto/circle.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TransactionService } from '../transaction/transaction.service';
-import { IsOptional, IsBoolean } from 'class-validator';
+import { IsOptional, IsBoolean, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 class BalanceQueryDto {
@@ -13,6 +13,10 @@ class BalanceQueryDto {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   consolidated?: boolean;
+
+  @IsOptional()
+  @IsIn(['month', '3months', '6months', '12months'])
+  period?: string;
 }
 
 @ApiTags('Circles')
@@ -60,7 +64,7 @@ export class CircleController {
   ) {
     // Verify membership
     await this.circleService.getCircle(circleId, userId);
-    return this.transactionService.getBalance(circleId, query.consolidated);
+    return this.transactionService.getBalance(circleId, query.consolidated, query.period);
   }
 
   @Post(':id/invitations')
