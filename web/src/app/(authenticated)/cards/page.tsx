@@ -325,6 +325,7 @@ export default function CardsPage() {
             >
               <option value="Visa">Visa</option>
               <option value="Mastercard">Mastercard</option>
+              <option value="AmericanExpress">American Express</option>
             </select>
           </div>
           <div>
@@ -406,6 +407,7 @@ export default function CardsPage() {
             >
               <option value="Visa">Visa</option>
               <option value="Mastercard">Mastercard</option>
+              <option value="AmericanExpress">American Express</option>
             </select>
           </div>
           <div>

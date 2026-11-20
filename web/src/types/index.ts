@@ -12,7 +12,7 @@ export type TransactionSource = 'manual' | 'statement' | 'notification_capture' 
 
 export type ConfirmationStatus = 'confirmed' | 'pending_confirmation';
 
-export type CardType = 'Visa' | 'Mastercard';
+export type CardType = 'Visa' | 'Mastercard' | 'AmericanExpress';
 export type CardMode = 'debit' | 'credit';
 
 export type PaymentMethod = 'cash' | 'card';
