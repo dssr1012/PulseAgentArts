@@ -7,8 +7,8 @@ export class CreateCardDto {
   @MaxLength(100)
   bankName: string;
 
-  @ApiProperty({ enum: ['Visa', 'Mastercard'] })
-  @IsIn(['Visa', 'Mastercard'])
+  @ApiProperty({ enum: ['Visa', 'Mastercard', 'AmericanExpress'] })
+  @IsIn(['Visa', 'Mastercard', 'AmericanExpress'])
   cardType: string;
 
   @ApiProperty({ enum: ['debit', 'credit'] })
@@ -34,9 +34,9 @@ export class UpdateCardDto {
   @MaxLength(100)
   bankName?: string;
 
-  @ApiPropertyOptional({ enum: ['Visa', 'Mastercard'] })
+  @ApiPropertyOptional({ enum: ['Visa', 'Mastercard', 'AmericanExpress'] })
   @IsOptional()
-  @IsIn(['Visa', 'Mastercard'])
+  @IsIn(['Visa', 'Mastercard', 'AmericanExpress'])
   cardType?: string;
 
   @ApiPropertyOptional({ enum: ['debit', 'credit'] })
