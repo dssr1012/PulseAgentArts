@@ -46,6 +46,7 @@ Devuelve un JSON con esta estructura:
 
 Widget types: "kpi_cards", "area_chart", "bar_chart", "pie_chart", "line_chart", "text_block", "table", "alert"
 Cada widget tiene: id, type, title, span ("full"|"half"), y datos específicos según el tipo.
+For "table" widgets: rows MUST use the SAME key names as columns. Example: columns=[{key:"detalle",label:"Detalle"},{key:"peso",label:"Peso relativo"}] → rows=[{"detalle":"Gastos fijos","peso":"40%"}]. Never use different keys in rows vs columns.
 Colores: emerald=#10b981, red=#ef4444, blue=#3b82f6, yellow=#f59e0b
 
 Devuelve SOLO JSON válido, sin markdown.`;

@@ -153,7 +153,7 @@ Widget types and their required fields:
 4. "pie_chart" — span, title, x_key, series, data
 5. "line_chart" — span, title, x_key, series, data
 6. "text_block" — span, title, content, tone
-7. "table" — span, title, columns: [{key, label, align}], rows: [{key: value}]
+7. "table" — span, title, columns: [{key, label, align}], rows: [{key: value}] — row keys MUST match column keys exactly (e.g. if column key is "detalle", row must have {"detalle": "..."})
 8. "alert" — span, title, content, tone
 
 Rules:

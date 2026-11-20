@@ -1,7 +1,21 @@
 'use client';
 
 import React from 'react';
-import type { Widget } from './ai-dashboard-types';
+import type { Widget, TableColumn } from './ai-dashboard-types';
+
+function getCellValue(
+  row: Record<string, string | number>,
+  col: TableColumn,
+): string | number | undefined {
+  if (row[col.key] !== undefined) return row[col.key];
+  if (row[col.label] !== undefined) return row[col.label];
+  const rowKeys = Object.keys(row);
+  const ciKey = rowKeys.find((k) => k.toLowerCase() === col.key.toLowerCase());
+  if (ciKey !== undefined) return row[ciKey];
+  const ciLabel = rowKeys.find((k) => k.toLowerCase() === col.label.toLowerCase());
+  if (ciLabel !== undefined) return row[ciLabel];
+  return undefined;
+}
 
 export function TableRenderer({ widget }: { widget: Widget }) {
   if (!widget.columns || !widget.rows) return null;
@@ -28,8 +42,13 @@ export function TableRenderer({ widget }: { widget: Widget }) {
             {widget.rows.map((row, i) => (
               <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
                 {widget.columns!.map((col) => {
-                  const val = row[col.key];
+                  const val = getCellValue(row, col);
                   const isNum = typeof val === 'number';
+                  const display = val === undefined || val === null
+                    ? ''
+                    : isNum
+                      ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
+                      : String(val);
                   return (
                     <td
                       key={col.key}
@@ -37,7 +56,7 @@ export function TableRenderer({ widget }: { widget: Widget }) {
                         col.align === 'right' || isNum ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                       } text-gray-900 dark:text-gray-100`}
                     >
-                      {isNum ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 0 })}` : String(val)}
+                      {display}
                     </td>
                   );
                 })}
