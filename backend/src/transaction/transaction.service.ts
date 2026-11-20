@@ -391,13 +391,29 @@ export class TransactionService {
     });
   }
 
-  async getBalance(circleId: string, consolidated: boolean = false) {
+  async getBalance(circleId: string, consolidated: boolean = false, period: string = 'month') {
     const group = await this.prisma.familyGroup.findUnique({
       where: { id: circleId },
       select: { baseCurrency: true },
     });
 
-    const confirmedWhere = { groupId: circleId };
+    const now = new Date();
+    let startDate: Date;
+    switch (period) {
+      case '3months':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        break;
+      case '6months':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        break;
+      case '12months':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const confirmedWhere = { groupId: circleId, transactionDate: { gte: startDate } };
 
     // Compute totals by type at the database level
     const totalsByType = await this.prisma.transaction.groupBy({

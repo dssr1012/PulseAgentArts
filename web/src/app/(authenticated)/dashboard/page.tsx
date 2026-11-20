@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showConsolidated, setShowConsolidated] = useState(false);
   const [anomalyCount, setAnomalyCount] = useState(0);
+  const [balancePeriod, setBalancePeriod] = useState('month');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +37,7 @@ export default function DashboardPage() {
 
       try {
         const [balanceData, expensesData, incomesData, categoriesData, anomalyData] = await Promise.allSettled([
-          apiClient.getBalance(activeCircleId, showConsolidated),
+          apiClient.getBalance(activeCircleId, showConsolidated, balancePeriod),
           apiClient.getExpenses({ limit: 10, page: 1 }),
           apiClient.getIncomes({ limit: 10, page: 1 }),
           apiClient.getCategories(activeCircleId),
@@ -63,13 +64,13 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [activeCircleId, showConsolidated, addToast, t]);
+  }, [activeCircleId, showConsolidated, balancePeriod, addToast, t]);
 
   const handleRefresh = async () => {
     if (!activeCircleId) return;
     setIsLoading(true);
     try {
-      const balanceData = await apiClient.getBalance(activeCircleId, showConsolidated);
+      const balanceData = await apiClient.getBalance(activeCircleId, showConsolidated, balancePeriod);
       setBalance(balanceData);
       addToast('success', t('dashboard.refreshed'));
     } catch {
@@ -151,6 +152,23 @@ export default function DashboardPage() {
           </a>
         </div>
       )}
+
+      <div className="flex items-center gap-2">
+        <label htmlFor="balance-period" className="text-sm font-medium text-gray-500">
+          {t('dashboard.period')}
+        </label>
+        <select
+          id="balance-period"
+          value={balancePeriod}
+          onChange={(e) => setBalancePeriod(e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-pulse-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+        >
+          <option value="month">{t('dashboard.periodMonth')}</option>
+          <option value="3months">{t('dashboard.period3Months')}</option>
+          <option value="6months">{t('dashboard.period6Months')}</option>
+          <option value="12months">{t('dashboard.period12Months')}</option>
+        </select>
+      </div>
 
       <BalanceCards balance={balance} />
 
