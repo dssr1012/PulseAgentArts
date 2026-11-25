@@ -342,27 +342,28 @@ export interface ReconciledItem {
   amount: number;
   currency: Currency;
   matched: boolean;
-  matchedExpense: {
+  matched_expense: {
     id: string;
     description: string | null;
     amount: number;
-    transactionDate: string;
-    paymentMethod: string;
+    transaction_date: string;
+    payment_method: string;
     source: string;
   } | null;
 }
 
 export interface ReconciliationResult {
-  previewId: string;
-  cardId: string;
-  cardLastFour: string;
-  cardBank: string;
-  closingDate: string;
-  dueDate: string;
-  totalAmount: number;
-  minPayment: number;
+  preview_id: string;
+  card_id: string;
+  card_last_four: string;
+  card_bank: string;
+  financing_rate: number | null;
+  closing_date: string;
+  due_date: string;
+  total_amount: number;
+  min_payment: number;
   currency: Currency;
-  isConfirmed: boolean;
+  is_confirmed: boolean;
   items: ReconciledItem[];
   summary: {
     total: number;

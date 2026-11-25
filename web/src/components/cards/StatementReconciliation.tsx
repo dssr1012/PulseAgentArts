@@ -120,25 +120,33 @@ export function StatementReconciliation({ previewId, onComplete, onClose }: Stat
   return (
     <div className="space-y-5">
       {/* Statement Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="p-3 rounded-lg bg-gray-50">
           <p className="text-xs text-gray-500">Close Date</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1">{formatDate(reconciliation.closingDate)}</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1">{formatDate(reconciliation.closing_date)}</p>
         </div>
         <div className="p-3 rounded-lg bg-gray-50">
           <p className="text-xs text-gray-500">Due Date</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1">{formatDate(reconciliation.dueDate)}</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1">{formatDate(reconciliation.due_date)}</p>
         </div>
         <div className="p-3 rounded-lg bg-red-50">
           <p className="text-xs text-red-500">Total</p>
           <p className="text-sm font-semibold text-red-600 mt-1">
-            {formatCurrency(reconciliation.totalAmount, reconciliation.currency)}
+            {formatCurrency(reconciliation.total_amount, reconciliation.currency)}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-yellow-50">
           <p className="text-xs text-yellow-600">Min Payment</p>
           <p className="text-sm font-semibold text-yellow-700 mt-1">
-            {formatCurrency(reconciliation.minPayment, reconciliation.currency)}
+            {formatCurrency(reconciliation.min_payment, reconciliation.currency)}
+          </p>
+        </div>
+        <div className="p-3 rounded-lg bg-purple-50">
+          <p className="text-xs text-purple-600">TNA</p>
+          <p className="text-sm font-semibold text-purple-700 mt-1">
+            {reconciliation.financing_rate !== null && reconciliation.financing_rate !== undefined
+              ? reconciliation.financing_rate.toFixed(3) + '%'
+              : '—'}
           </p>
         </div>
       </div>
@@ -147,7 +155,7 @@ export function StatementReconciliation({ previewId, onComplete, onClose }: Stat
       <div className="flex items-center gap-4 p-3 rounded-lg bg-blue-50 border border-blue-100">
         <CreditCard className="h-5 w-5 text-blue-500 shrink-0" />
         <p className="text-sm text-blue-800">
-          <span className="font-semibold">{reconciliation.cardBank} •••• {reconciliation.cardLastFour}</span>
+          <span className="font-semibold">{reconciliation.card_bank} •••• {reconciliation.card_last_four}</span>
           {' — '}
           {reconciliation.summary.total} charges:{' '}
           <span className="text-green-700 font-medium">{reconciliation.summary.matched} already loaded</span>
@@ -174,9 +182,9 @@ export function StatementReconciliation({ previewId, onComplete, onClose }: Stat
                   <span className="text-sm text-gray-700 truncate">{item.description}</span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  {item.matchedExpense && (
+                  {item.matched_expense && (
                     <span className="text-xs text-gray-400">
-                      → {item.matchedExpense.paymentMethod === 'card' ? 'card' : 'cash'}
+                      → {item.matched_expense.payment_method === 'card' ? 'card' : 'cash'}
                     </span>
                   )}
                   <span className="text-sm font-medium text-gray-900">{formatCurrency(item.amount, item.currency)}</span>

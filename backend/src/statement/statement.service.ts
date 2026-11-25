@@ -334,6 +334,7 @@ export class StatementService {
       cardId: statement.cardId,
       cardLastFour: statement.card.lastFourDigits,
       cardBank: statement.card.bankName,
+      financingRate: statement.card.financingRate ? Number(statement.card.financingRate) : null,
       closingDate: statement.closeDate.toISOString(),
       dueDate: statement.dueDate.toISOString(),
       totalAmount: Number(statement.totalAmount),

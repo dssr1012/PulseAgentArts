@@ -174,7 +174,14 @@ export class PdfStatementParser implements IStatementParser {
   }
 
   private extractFinancingRate(text: string): number | undefined {
-    // Try TNA (Tasa Nominal Anual) patterns
+    // Prefer "Tasa de financiación máx" context (main rate, not punitorio)
+    const financingMatch = text.match(/financiaci[oó]n\s+m[aá]x\.?[^\n]*?TNA\s+([\d.,]+)\s*%/i);
+    if (financingMatch) {
+      const rate = this.parsePercentage(financingMatch[1]);
+      if (rate !== null && rate > 0) return rate;
+    }
+
+    // Fall back to any TNA pattern
     const patterns = [
       /TNA\s*:?\s*([\d.,]+)\s*%/i,
       /TASA\s+NOMINAL\s+ANUAL\s*:?\s*([\d.,]+)\s*%/i,
@@ -183,11 +190,17 @@ export class PdfStatementParser implements IStatementParser {
     for (const pattern of patterns) {
       const m = text.match(pattern);
       if (m) {
-        const rate = this.parseAmount(m[1]);
+        const rate = this.parsePercentage(m[1]);
         if (rate !== null && rate > 0) return rate;
       }
     }
     return undefined;
+  }
+
+  private parsePercentage(raw: string): number | null {
+    let cleaned = raw.trim().replace(/\./g, '').replace(',', '.');
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? null : n;
   }
 
   private parseAmount(raw: string): number | null {
