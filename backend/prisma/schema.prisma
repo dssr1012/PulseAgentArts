@@ -350,7 +350,7 @@ model CreditCard {
 
   // Card metadata — auto-populated from statement PDFs
   creditLimit       Decimal? @map("credit_limit") @db.Decimal(12, 2)
-  financingRate     Decimal? @map("financing_rate") @db.Decimal(5, 2)  // Annual TNA %
+  financingRate     Decimal? @map("financing_rate") @db.Decimal(10, 2)  // Annual TNA %
   closingDay        Int?     @map("closing_day")    // Statement closing day of month (1-31)
   dueDay            Int?     @map("due_day")        // Payment due day of month (1-31)
 
