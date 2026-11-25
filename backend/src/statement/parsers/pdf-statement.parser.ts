@@ -117,7 +117,7 @@ export class PdfStatementParser implements IStatementParser {
     const month = this.MONTHS[monStr.toLowerCase().slice(0, 3)];
     const year = 2000 + parseInt(yearStr, 10);
     if (isNaN(day) || month === undefined || isNaN(year)) return null;
-    return new Date(year, month, day);
+    return new Date(Date.UTC(year, month, day));
   }
 
   private extractClosingDate(text: string): Date {
@@ -226,6 +226,8 @@ export class PdfStatementParser implements IStatementParser {
       const dateMatch = trimmed.match(datePattern);
       if (!dateMatch) continue;
 
+      if (/\bTNA\b\s+\d{8,}/i.test(trimmed)) continue;
+
       const day = dateMatch[1];
       const month = dateMatch[2];
       const year = dateMatch[3];
@@ -241,6 +243,7 @@ export class PdfStatementParser implements IStatementParser {
       for (let i = 0; i < parts.length; i++) {
         const p = parts[i].trim();
         if (/^[\d.,]+$/.test(p) && !p.endsWith('%')) {
+          if (/^\d{10,}$/.test(p)) continue;
           const amt = this.parseAmount(p);
           if (amt !== null) {
             if (firstAmountIdx === -1) firstAmountIdx = i;
@@ -263,7 +266,7 @@ export class PdfStatementParser implements IStatementParser {
       const totalInstallments = cuotaMatch ? parseInt(cuotaMatch[2], 10) : undefined;
 
       items.push({
-        date: new Date(fullYear, parseInt(month, 10) - 1, parseInt(day, 10)),
+        date: new Date(Date.UTC(fullYear, parseInt(month, 10) - 1, parseInt(day, 10))),
         description,
         amount: pesos,
         currency: 'ARS',
