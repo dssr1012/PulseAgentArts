@@ -7,7 +7,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import type { CreditCard, StatementPreview, CardType, CardMode } from '@/types';
-import { Modal } from '@/components/ui/Modal';
+import { Modal } from "@/components/ui/Modal";
+import { formatDate } from "@/lib/utils";
 import { LoadingOverlay } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/Tabs';
 import { StatementUploader } from '@/components/cards/StatementUploader';
@@ -535,13 +536,13 @@ export default function CardsPage() {
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {t('cards.close')} {new Date(stmt.close_date).toLocaleDateString()}
+                        {t('cards.close')} {formatDate(stmt.close_date)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {t('cards.due')} {new Date(stmt.due_date).toLocaleDateString()}
+                        {t('cards.due')} {formatDate(stmt.due_date)}
                       </span>
                     </div>
                   </div>
@@ -588,7 +589,7 @@ export default function CardsPage() {
                         <div key={item.id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg hover:bg-gray-50">
                           <div className="flex items-center gap-3">
                             <span className="text-gray-400 text-xs">
-                              {new Date(item.date).toLocaleDateString()}
+                              {formatDate(item.date)}
                             </span>
                             <span className="text-gray-700">{item.description}</span>
                           </div>
