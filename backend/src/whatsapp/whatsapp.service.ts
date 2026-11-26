@@ -5,6 +5,7 @@ import { TransactionService } from '../transaction/transaction.service';
 import { WhatsappMessageParser } from './whatsapp-message.parser';
 import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import { CopilotService } from '../projection/copilot.service';
+import { SttService } from '../stt/stt.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as QRCode from 'qrcode';
@@ -31,6 +32,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private messageParser: WhatsappMessageParser,
     private llmOrchestrator: LlmOrchestratorService,
     private copilotService: CopilotService,
+    private sttService: SttService,
   ) {
     this.authDir = this.config.get<string>('WHATSAPP_AUTH_DIR', './whatsapp-auth');
     if (!fs.existsSync(this.authDir)) {
@@ -213,7 +215,27 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       const remoteJid = msg.key?.remoteJid || '';
       if (!allowedJids.has(remoteJid)) continue;
 
-      const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+      let text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+
+      // Handle voice notes (audio messages) via Groq Whisper STT
+      if (!text.trim() && msg.message.audioMessage) {
+        try {
+          const { downloadMediaMessage } = await import('@whiskeysockets/baileys');
+          const mediaBuffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: this.logger } as any);
+          const mimeType = msg.message.audioMessage.mimetype || 'audio/ogg; codecs=opus';
+          this.logger.log('Received voice note, transcribing...');
+          const result = await this.sttService.transcribe(mediaBuffer as Buffer, mimeType);
+          if (result?.text) {
+            text = result.text;
+            this.logger.log('Voice note transcribed: "' + text.substring(0, 60) + '..."');
+          } else {
+            this.logger.warn('Voice note transcription returned no text');
+          }
+        } catch (err) {
+          this.logger.error('Voice note handling failed: ' + (err).message);
+        }
+      }
+
       if (!text.trim()) continue;
 
       // Fetch user and circle info early (needed for LLM fallback)

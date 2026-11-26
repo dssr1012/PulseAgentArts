@@ -5,10 +5,11 @@ import { WhatsappMessageParser } from './whatsapp-message.parser';
 import { TransactionModule } from '../transaction/transaction.module';
 import { LlmModule } from '../llm/llm.module';
 import { ProjectionModule } from '../projection/projection.module';
+import { SttModule } from '../stt/stt.module';
 import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [TransactionModule, LlmModule, CommonModule, ProjectionModule],
+  imports: [TransactionModule, LlmModule, CommonModule, ProjectionModule, SttModule],
   controllers: [WhatsappController],
   providers: [WhatsappService, WhatsappMessageParser],
   exports: [WhatsappService],
