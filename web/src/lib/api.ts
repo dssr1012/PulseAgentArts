@@ -543,6 +543,11 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteStatement(cardId: string, statementId: string) {
+    const response = await this.client.delete(`/cards/${cardId}/statements/${statementId}`);
+    return response.data;
+  }
+
   // ============ WhatsApp API ============
 
   async getWhatsappStatus() {
