@@ -54,12 +54,12 @@ export const MODEL_ROUTING: Record<LlmTask, LlmModelConfig> = {
   // Fast model for simple expense parsing (e.g. "gaste 5000 en super")
   expense_parsing_simple: {
     modelId: 'deepseek-v4.1-flash-1017',
-    maxTokens: 500,
+    maxTokens: 2000,
     temperature: 0.1,
   },
   // Mid-tier model for complex parsing (ambiguous messages, multiple items)
   expense_parsing_complex: {
-    modelId: 'glm-5.1',
+    modelId: 'glm-5.2',
     maxTokens: 1000,
     temperature: 0.1,
   },
@@ -101,7 +101,7 @@ export const MODEL_ROUTING: Record<LlmTask, LlmModelConfig> = {
   },
   // Mid-tier for general chat
   general_chat: {
-    modelId: 'glm-5.1',
+    modelId: 'glm-5.2',
     maxTokens: 1000,
     temperature: 0.5,
   },
