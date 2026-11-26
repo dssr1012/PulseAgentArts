@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import * as crypto from "crypto";
 
 export interface TranscriptionResult {
   text: string;
@@ -15,9 +16,24 @@ export class SttService {
   private readonly apiUrl: string;
 
   constructor(private config: ConfigService) {
-    this.apiKey = this.config.get<string>("GROQ_API_KEY") || "";
+    const encKey = this.config.get<string>("GROQ_API_KEY_ENC") || "";
+    const masterKey = this.config.get<string>("STATEMENT_PASSWORD_KEY") || "";
+    this.apiKey = this.decryptKey(encKey, masterKey);
     this.model = this.config.get<string>("GROQ_STT_MODEL") || "whisper-large-v3-turbo";
     this.apiUrl = this.config.get<string>("GROQ_API_URL") || "https://api.groq.com/openai/v1/audio/transcriptions";
+  }
+
+  private decryptKey(encKey: string, masterKey: string): string {
+    if (!encKey || !masterKey) return "";
+    try {
+      const key = crypto.createHash("sha256").update(masterKey).digest();
+      const [ivB, tagB, ctB] = encKey.split(":");
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivB, "base64"), { authTagLength: 16 });
+      decipher.setAuthTag(Buffer.from(tagB, "base64"));
+      return Buffer.concat([decipher.update(Buffer.from(ctB, "base64")), decipher.final()]).toString("utf8");
+    } catch {
+      return "";
+    }
   }
 
   isAvailable(): boolean {
