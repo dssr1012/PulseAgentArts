@@ -462,6 +462,28 @@ class ApiClient {
     return response.data;
   }
 
+  // ============ Card Payment API ============
+
+  async getCardPayments(cardId: string) {
+    const response = await this.client.get(`/cards/${cardId}/payments`);
+    return response.data ?? [];
+  }
+
+  async createCardPayment(cardId: string, data: { amount: number; currency: string; payment_date: string; description?: string; statement_id?: string }) {
+    const response = await this.client.post(`/cards/${cardId}/payments`, data);
+    return response.data;
+  }
+
+  async getCardBalance(cardId: string) {
+    const response = await this.client.get(`/cards/${cardId}/balance`);
+    return response.data;
+  }
+
+  async deleteCardPayment(cardId: string, paymentId: string) {
+    const response = await this.client.delete(`/cards/${cardId}/payments/${paymentId}`);
+    return response.data;
+  }
+
   // ============ Recurring Transaction API ============
   async getRecurringTransactions() {
     const response = await this.client.get('/recurring-transactions');

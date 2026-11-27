@@ -8,6 +8,7 @@ import { CircleModule } from './circle/circle.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { CategoryModule } from './category/category.module';
 import { CardModule } from './card/card.module';
+import { CardPaymentModule } from './card-payment/card-payment.module';
 import { StatementModule } from './statement/statement.module';
 import { AnomalyModule } from './anomaly/anomaly.module';
 import { PrivacyModule } from './privacy/privacy.module';
@@ -38,6 +39,7 @@ import { LoggerModule } from './common/logger/logger.module';
     TransactionModule,
     CategoryModule,
     CardModule,
+    CardPaymentModule,
     StatementModule,
     AnomalyModule,
     PrivacyModule,

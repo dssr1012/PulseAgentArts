@@ -255,6 +255,27 @@
     "deleteFailed": "Error al eliminar tarjeta.",
     "statementsLoadFailed": "Error al cargar resúmenes."
   },
+  "cardPayments": {
+    "title": "Pagos de Tarjeta",
+    "recordPayment": "Registrar Pago",
+    "viewPayments": "Ver Pagos",
+    "paymentHistory": "Historial de Pagos",
+    "cardBalance": "Saldo de Tarjeta",
+    "totalExpenses": "Gastos en Tarjeta",
+    "totalPayments": "Pagos Realizados",
+    "balance": "Saldo Pendiente",
+    "amount": "Monto",
+    "paymentDate": "Fecha de Pago",
+    "description": "Descripción",
+    "noPayments": "No hay pagos registrados",
+    "paymentRecorded": "Pago registrado correctamente",
+    "paymentDeleted": "Pago eliminado",
+    "confirmDelete": "¿Eliminar este pago?",
+    "cashFlow": "Flujo de Efectivo",
+    "cashExpenses": "Gastos en Efectivo",
+    "cardPayments": "Pagos a Tarjetas",
+    "totalOutflow": "Egreso Total"
+  },
   "anomalies": {
     "title": "Alertas de Anomalías",
     "irregularExpenses": "gasto irregular",
