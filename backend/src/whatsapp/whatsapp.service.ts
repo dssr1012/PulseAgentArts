@@ -272,6 +272,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
             mimeType,
             categories.map((c) => c.name),
             cards.map((c) => ({ ...c, tag: c.tag || undefined })),
+            imageMsg.caption || '',
           );
 
           if (visionParsed) {

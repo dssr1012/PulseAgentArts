@@ -40,6 +40,7 @@ export class VisionService {
     mimeType: string,
     availableCategories: string[],
     availableCards: Array<{ tag?: string; lastFourDigits: string; bankName: string }>,
+    caption: string = "",
   ): Promise<ParsedExpenseFromLlm | null> {
     if (!this.isAvailable()) {
       this.logger.warn("Groq API key not configured, skipping vision extraction");
@@ -66,7 +67,8 @@ Rules:
 Return ONLY valid JSON, no markdown:
 {"amount": 0, "currency": "ARS", "category": "", "description": "", "merchantName": "", "paymentMethod": "cash", "cardIdentifier": "", "transactionDate": null, "confidence": 0.9}`;
 
-      const userPrompt = `Available cards: ${JSON.stringify(availableCards)}\n\nExtract the expense data from this receipt image.`;
+      const captionContext = caption.trim() ? `\n\nUser caption (use this to override image data if conflicting, e.g. payment method, card): "${caption.trim()}"` : '';
+      const userPrompt = `Available cards: ${JSON.stringify(availableCards)}${captionContext}\n\nExtract the expense data from this receipt image.`;
 
       const response = await fetch(this.apiUrl, {
         method: "POST",
