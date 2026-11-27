@@ -95,6 +95,11 @@ export class WhatsappMessageParser {
       } else {
         cleaned = cleaned.replace(/,/g, '');
       }
+    } else if (cleaned.includes('.')) {
+      const parts = cleaned.split('.');
+      if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+        cleaned = cleaned.replace(/\./g, '');
+      }
     }
     const num = parseFloat(cleaned);
     return isNaN(num) ? null : num;

@@ -217,12 +217,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       let text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
 
-      // Handle voice notes (audio messages) via Groq Whisper STT
-      if (!text.trim() && msg.message.audioMessage) {
+      // Handle voice notes (audio/PTT messages) via Groq Whisper STT
+      const audioMsg = msg.message.audioMessage || msg.message.pttMessage;
+      if (!text.trim() && audioMsg) {
         try {
           const { downloadMediaMessage } = await import('@whiskeysockets/baileys');
           const mediaBuffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: this.logger } as any);
-          const mimeType = msg.message.audioMessage.mimetype || 'audio/ogg; codecs=opus';
+          const mimeType = audioMsg.mimetype || 'audio/ogg; codecs=opus';
           this.logger.log('Received voice note, transcribing...');
           const result = await this.sttService.transcribe(mediaBuffer as Buffer, mimeType);
           if (result?.text) {

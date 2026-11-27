@@ -78,7 +78,7 @@ Return ONLY valid JSON, no markdown:
 
       const parsed = JSON.parse(response.content);
       return {
-        amount: parseFloat(parsed.amount) || 0,
+        amount: this.parseLlmAmount(parsed.amount),
         currency: parsed.currency || 'ARS',
         category: parsed.category || undefined,
         description: parsed.description || undefined,
@@ -92,6 +92,22 @@ Return ONLY valid JSON, no markdown:
       this.logger.error(`LLM expense parsing failed: ${err.message}`);
       return null;
     }
+  }
+
+  private parseLlmAmount(raw: any): number {
+    if (typeof raw === 'number') return raw;
+    const str = String(raw).trim();
+    if (str.includes('.') && str.includes(',')) {
+      return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+    } else if (str.includes(',')) {
+      const parts = str.split(',');
+      if (parts.length === 2 && parts[1].length <= 2) return parseFloat(str.replace(',', '.')) || 0;
+      return parseFloat(str.replace(/,/g, '')) || 0;
+    } else if (str.includes('.')) {
+      const parts = str.split('.');
+      if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) return parseFloat(str.replace(/\./g, '')) || 0;
+    }
+    return parseFloat(str) || 0;
   }
 
   /**
