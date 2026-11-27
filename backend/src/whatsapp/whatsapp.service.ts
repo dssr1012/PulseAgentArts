@@ -2,10 +2,12 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
 import { TransactionService } from '../transaction/transaction.service';
-import { WhatsappMessageParser } from './whatsapp-message.parser';
+import { WhatsappMessageParser, ParsedExpenseMessage } from './whatsapp-message.parser';
 import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import { CopilotService } from '../projection/copilot.service';
 import { SttService } from '../stt/stt.service';
+import { VisionService } from '../stt/vision.service';
+import { ParsedExpenseFromLlm } from '../llm/llm.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as QRCode from 'qrcode';
@@ -33,6 +35,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private llmOrchestrator: LlmOrchestratorService,
     private copilotService: CopilotService,
     private sttService: SttService,
+    private visionService: VisionService,
   ) {
     this.authDir = this.config.get<string>('WHATSAPP_AUTH_DIR', './whatsapp-auth');
     if (!fs.existsSync(this.authDir)) {
@@ -216,6 +219,15 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       if (!allowedJids.has(remoteJid)) continue;
 
       let text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+      let visionParsed: ParsedExpenseFromLlm | null = null;
+
+      // Fetch user and circle info early (needed for text, audio, and image paths)
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { circleMemberships: true },
+      });
+      if (!user?.circleMemberships || user.circleMemberships.length === 0) continue;
+      const circleId = user.circleMemberships[0].groupId;
 
       // Handle voice notes (audio/PTT messages) via Groq Whisper STT
       const audioMsg = msg.message.audioMessage || msg.message.pttMessage;
@@ -237,18 +249,59 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      if (!text.trim()) continue;
+      // Handle image messages (receipts/invoices) via Groq Vision
+      const imageMsg = msg.message.imageMessage;
+      if (!text.trim() && imageMsg) {
+        try {
+          const { downloadMediaMessage } = await import('@whiskeysockets/baileys');
+          const mediaBuffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: this.logger } as any);
+          const mimeType = imageMsg.mimetype || 'image/jpeg';
+          this.logger.log('Received image, extracting expense via vision...');
 
-      // Fetch user and circle info early (needed for LLM fallback)
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: { circleMemberships: true },
-      });
-      if (!user?.circleMemberships || user.circleMemberships.length === 0) continue;
-      const circleId = user.circleMemberships[0].groupId;
+          const categories = await this.prisma.category.findMany({
+            where: { groupId: circleId },
+            select: { name: true },
+          });
+          const cards = await this.prisma.creditCard.findMany({
+            where: { groupId: circleId },
+            select: { tag: true, lastFourDigits: true, bankName: true },
+          });
 
-      // Hybrid parsing: regex first, LLM fallback
-      let parsed = this.messageParser.parse(text);
+          visionParsed = await this.visionService.extractExpense(
+            mediaBuffer as Buffer,
+            mimeType,
+            categories.map((c) => c.name),
+            cards.map((c) => ({ ...c, tag: c.tag || undefined })),
+          );
+
+          if (visionParsed) {
+            this.logger.log(`Vision extracted expense: ${visionParsed.amount} ${visionParsed.currency} (confidence: ${visionParsed.confidence})`);
+          }
+        } catch (err) {
+          this.logger.error('Image/receipt handling failed: ' + (err).message);
+        }
+      }
+
+      if (!text.trim() && !visionParsed) continue;
+
+      // If vision already parsed the expense, use it directly; otherwise parse text
+      let parsed: ParsedExpenseMessage | null = null;
+
+      if (visionParsed && visionParsed.amount > 0 && visionParsed.confidence >= 0.5) {
+        parsed = {
+          amount: visionParsed.amount,
+          description: visionParsed.description || 'Gasto desde foto',
+          currency: visionParsed.currency,
+          paymentMethod: visionParsed.paymentMethod || 'cash',
+          cardIdentifier: visionParsed.cardIdentifier,
+          categoryName: visionParsed.category,
+          merchantName: visionParsed.merchantName,
+          transactionDate: visionParsed.transactionDate,
+        };
+        this.logger.log(`Expense from photo: ${parsed.amount} ${parsed.currency} at ${parsed.merchantName || 'unknown merchant'}`);
+      } else {
+        // Hybrid parsing: regex first, LLM fallback
+        parsed = this.messageParser.parse(text);
 
       if (!parsed) {
         // Regex parser failed — try LLM
@@ -294,6 +347,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
           this.logger.error(`WhatsApp analysis failed: ${err.message}`);
         }
         continue;
+      }
       }
       }
 
