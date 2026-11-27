@@ -476,6 +476,20 @@ export class TransactionService {
       }
     }
 
+    // Card payments (settlements) — NOT counted in totalExpenses to avoid double-counting
+    const cardPaymentsData = await this.prisma.cardPayment.aggregate({
+      where: { groupId: circleId, paymentDate: { gte: startDate } },
+      _sum: { amount: true },
+    });
+    const totalCardPayments = Number(cardPaymentsData._sum.amount || 0);
+
+    // Cash expenses only (non-card) — for cash flow view
+    const cashExpensesData = await this.prisma.transaction.aggregate({
+      where: { ...confirmedWhere, type: 'expense', paymentMethod: 'cash' },
+      _sum: { amount: true },
+    });
+    const totalCashExpenses = Number(cashExpensesData._sum.amount || 0);
+
     const result: any = {
       totalIncome,
       totalExpenses,
@@ -483,6 +497,13 @@ export class TransactionService {
       baseCurrency: group?.baseCurrency || 'ARS',
       breakdownByCurrency,
       breakdownByCategory,
+      // Cash flow: money that actually left the bank account
+      cashFlow: {
+        cashExpenses: totalCashExpenses,
+        cardPayments: totalCardPayments,
+        totalOutflow: totalCashExpenses + totalCardPayments,
+      },
+      totalCardPayments,
     };
 
     if (consolidated) {

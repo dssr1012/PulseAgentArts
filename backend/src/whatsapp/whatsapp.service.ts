@@ -7,6 +7,7 @@ import { LlmOrchestratorService } from '../llm/llm-orchestrator.service';
 import { CopilotService } from '../projection/copilot.service';
 import { SttService } from '../stt/stt.service';
 import { VisionService } from '../stt/vision.service';
+import { CardPaymentService } from '../card-payment/card-payment.service';
 import { ParsedExpenseFromLlm } from '../llm/llm.interface';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -36,6 +37,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private copilotService: CopilotService,
     private sttService: SttService,
     private visionService: VisionService,
+    private cardPaymentService: CardPaymentService,
   ) {
     this.authDir = this.config.get<string>('WHATSAPP_AUTH_DIR', './whatsapp-auth');
     if (!fs.existsSync(this.authDir)) {
@@ -285,6 +287,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       if (!text.trim() && !visionParsed) continue;
 
+      // Check if this is a card payment message (e.g. "pague tarjeta visa 50000")
+      const cardPaymentResult = await this.tryHandleCardPayment(userId, circleId, text);
+      if (cardPaymentResult) {
+        await this.sendReply(userId, msg.key.remoteJid, cardPaymentResult);
+        this.logger.log(`Card payment handled via WhatsApp: ${text.substring(0, 60)}`);
+        continue;
+      }
+
       // If vision already parsed the expense, use it directly; otherwise parse text
       let parsed: ParsedExpenseMessage | null = null;
 
@@ -462,6 +472,75 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     await this.prisma.whatsappGroup.deleteMany({
       where: { userId, groupJid },
     });
+  }
+
+  private async tryHandleCardPayment(
+    userId: string,
+    circleId: string,
+    text: string,
+  ): Promise<string | null> {
+    // Match patterns like: "pague tarjeta visa 50000", "pague la tarjeta 50000", "pague santander 50000"
+    const lower = text.toLowerCase().trim();
+    if (!lower.startsWith("pague")) return null;
+
+    // Extract amount — look for a number (Argentine format: dots as thousands separator)
+    const amountMatch = text.match(/(\d[\d.]*\d|\d)/g);
+    if (!amountMatch) return null;
+
+    // Take the last number found (most likely the amount, not the card digits)
+    const rawAmount = amountMatch[amountMatch.length - 1];
+    const amount = parseFloat(rawAmount.replace(/\./g, ""));
+    if (!amount || amount < 1) return null;
+
+    // Try to find the card by tag or bank name in the message
+    const cards = await this.prisma.creditCard.findMany({
+      where: { groupId: circleId, cardMode: "credit" },
+    });
+    if (cards.length === 0) return null;
+
+    let matchedCard = null;
+    for (const card of cards) {
+      const tag = card.tag?.toLowerCase() || "";
+      const bank = card.bankName.toLowerCase();
+      const last4 = card.lastFourDigits;
+      if (
+        (tag && lower.includes(tag)) ||
+        (bank && lower.includes(bank)) ||
+        lower.includes(last4)
+      ) {
+        matchedCard = card;
+        break;
+      }
+    }
+
+    // If only one credit card, use it
+    if (!matchedCard && cards.length === 1) {
+      matchedCard = cards[0];
+    }
+
+    if (!matchedCard) {
+      return `No pude identificar la tarjeta. Tarjetas disponibles: ${cards.map((c) => c.tag || c.bankName).join(", ")}`;
+    }
+
+    try {
+      await this.cardPaymentService.createPayment(
+        userId,
+        circleId,
+        matchedCard.id,
+        {
+          amount,
+          currency: "ARS",
+          paymentDate: new Date().toISOString(),
+          description: `Pago de tarjeta via WhatsApp`,
+        },
+        "whatsapp",
+      );
+
+      return `Pago de tarjeta registrado: ${amount} en ${matchedCard.bankName} ${matchedCard.lastFourDigits}${matchedCard.tag ? " (" + matchedCard.tag + ")" : ""}`;
+    } catch (err) {
+      this.logger.error(`Failed to create card payment from WhatsApp: ${err.message}`);
+      return `Error al registrar el pago: ${err.message}`;
+    }
   }
 
   private async resolveCategory(userId: string, circleId: string, text: string, explicitCategory?: string): Promise<string> {

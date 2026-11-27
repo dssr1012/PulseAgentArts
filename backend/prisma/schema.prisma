@@ -113,6 +113,12 @@ enum PlanItemType {
   custom
 }
 
+enum CardPaymentSource {
+  manual
+  whatsapp
+  mcp
+}
+
 // ============================================================
 // USER & AUTH
 // ============================================================
@@ -137,6 +143,7 @@ model User {
   recurringTransactions RecurringTransaction[]
   refreshTokens        RefreshToken[]
   whatsappGroups       WhatsappGroup[]
+  cardPayments         CardPayment[]
 
   @@map("users")
 }
@@ -190,6 +197,7 @@ model FamilyGroup {
   anomalyAlerts AnomalyAlert[]
   paymentPlans PaymentPlan[]
   projectionSnapshots ProjectionSnapshot[]
+  cardPayments     CardPayment[]
 
   @@index([adminUserId])
   @@map("family_groups")
@@ -360,6 +368,7 @@ model CreditCard {
   statements     CardStatement[]
   transactions   Transaction[]
   recurringTransactions RecurringTransaction[]
+  cardPayments   CardPayment[]
 
   @@index([groupId])
   @@map("credit_cards")
@@ -379,6 +388,7 @@ model CardStatement {
 
   card        CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
   items       StatementItem[]
+  cardPayments CardPayment[]
 
   @@index([cardId])
   @@map("card_statements")
@@ -402,6 +412,34 @@ model StatementItem {
   @@index([statementId])
   @@index([matchedTransactionId])
   @@map("statement_items")
+}
+
+// ============================================================
+// CARD PAYMENTS (settlements — paying the credit card bill)
+// ============================================================
+
+model CardPayment {
+  id          String   @id @default(uuid())
+  groupId     String   @map("group_id")
+  userId      String   @map("user_id")
+  cardId      String   @map("card_id")
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    Currency
+  paymentDate DateTime @map("payment_date")
+  statementId String?  @map("statement_id")
+  source      CardPaymentSource @default(manual)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  group       FamilyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  card        CreditCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  statement   CardStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, paymentDate])
+  @@index([cardId])
+  @@index([userId])
+  @@map("card_payments")
 }
 
 // ============================================================
