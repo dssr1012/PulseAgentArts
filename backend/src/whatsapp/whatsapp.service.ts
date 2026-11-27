@@ -479,9 +479,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     circleId: string,
     text: string,
   ): Promise<string | null> {
-    // Match patterns like: "pague tarjeta visa 50000", "pague la tarjeta 50000", "pague santander 50000"
+    // Match patterns like: "pago tarjeta 50000", "pague tarjeta visa 50000", "pagué la tarjeta 50000"
     const lower = text.toLowerCase().trim();
-    if (!lower.startsWith("pague")) return null;
+    if (!lower.startsWith("pago") && !lower.startsWith("pague") && !lower.startsWith("pagu\u00e9")) return null;
 
     // Extract amount — look for a number (Argentine format: dots as thousands separator)
     const amountMatch = text.match(/(\d[\d.]*\d|\d)/g);
