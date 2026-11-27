@@ -215,6 +215,12 @@ export interface BalanceResponse {
   consolidated_total?: number;
   rates_stale?: boolean;
   last_rate_fetch?: string;
+  total_card_payments?: number;
+  cash_flow?: {
+    cash_expenses: number;
+    card_payments: number;
+    total_outflow: number;
+  };
 }
 
 // ============ Card Types ============
@@ -228,6 +234,28 @@ export interface CreditCard {
   last_four_digits: string;
   tag: string | null;
   created_at: string;
+}
+
+export interface CardPayment {
+  id: string;
+  group_id: string;
+  user_id: string;
+  card_id: string;
+  amount: number;
+  currency: Currency;
+  payment_date: string;
+  statement_id: string | null;
+  source: string;
+  description: string | null;
+  created_at: string;
+  card?: CreditCard;
+}
+
+export interface CardBalance {
+  card: CreditCard;
+  total_expenses: number;
+  total_payments: number;
+  balance: number;
 }
 
 export interface CreateCardRequest {

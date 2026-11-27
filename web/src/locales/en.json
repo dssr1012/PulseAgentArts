@@ -255,6 +255,27 @@
     "deleteFailed": "Failed to delete card.",
     "statementsLoadFailed": "Failed to load statements."
   },
+  "cardPayments": {
+    "title": "Card Payments",
+    "recordPayment": "Record Payment",
+    "viewPayments": "View Payments",
+    "paymentHistory": "Payment History",
+    "cardBalance": "Card Balance",
+    "totalExpenses": "Card Expenses",
+    "totalPayments": "Payments Made",
+    "balance": "Outstanding Balance",
+    "amount": "Amount",
+    "paymentDate": "Payment Date",
+    "description": "Description",
+    "noPayments": "No payments recorded",
+    "paymentRecorded": "Payment recorded successfully",
+    "paymentDeleted": "Payment deleted",
+    "confirmDelete": "Delete this payment?",
+    "cashFlow": "Cash Flow",
+    "cashExpenses": "Cash Expenses",
+    "cardPayments": "Card Payments",
+    "totalOutflow": "Total Outflow"
+  },
   "anomalies": {
     "title": "Anomaly Alerts",
     "irregularExpenses": "irregular expense",

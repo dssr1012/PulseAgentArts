@@ -13,6 +13,9 @@ import { LoadingOverlay } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/Tabs';
 import { StatementUploader } from '@/components/cards/StatementUploader';
 import { StatementReconciliation } from '@/components/cards/StatementReconciliation';
+import { CardPaymentsModal, CardPaymentsList } from '@/components/cards/CardPayments';
+import { formatCurrency } from '@/lib/utils';
+import type { CardBalance } from '@/types';
 import {
   Plus,
   CreditCard as CreditCardIcon,
@@ -43,6 +46,8 @@ export default function CardsPage() {
   const [showStatementsModal, setShowStatementsModal] = useState(false);
   const [cardStatements, setCardStatements] = useState<any[]>([]);
   const [isLoadingStatements, setIsLoadingStatements] = useState(false);
+  const [cardBalances, setCardBalances] = useState<Record<string, CardBalance>>({});
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
 
   // Add card form state
   const [bankName, setBankName] = useState('');
@@ -62,11 +67,26 @@ export default function CardsPage() {
   const [deletingCard, setDeletingCard] = useState<CreditCard | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const fetchCardBalances = useCallback(async (cardsList: CreditCard[]) => {
+    const creditCards = cardsList.filter((c) => c.card_mode === 'credit');
+    const balances: Record<string, CardBalance> = {};
+    await Promise.allSettled(
+      creditCards.map(async (card) => {
+        try {
+          const bal = await apiClient.getCardBalance(card.id);
+          balances[card.id] = bal;
+        } catch { /* ignore */ }
+      }),
+    );
+    setCardBalances(balances);
+  }, []);
+
   const fetchCards = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await apiClient.getCards();
       setCards(data);
+      fetchCardBalances(data);
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'CIRCLE_NOT_FOUND') {
@@ -279,6 +299,20 @@ export default function CardsPage() {
                   {card.tag}
                 </span>
               )}
+              {card.card_mode === 'credit' && cardBalances[card.id] && (
+                <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-500">{t('cardPayments.cardBalance')}</span>
+                    <span className={`font-semibold ${cardBalances[card.id].balance > 0 ? 'text-pulse-red-600' : 'text-emerald-600'}`}>
+                      {formatCurrency(cardBalances[card.id].balance, cardBalances[card.id].card?.card_mode ? 'ARS' : 'ARS')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>{t('cardPayments.totalExpenses')}: {formatCurrency(cardBalances[card.id].total_expenses, 'ARS')}</span>
+                    <span>{t('cardPayments.totalPayments')}: {formatCurrency(cardBalances[card.id].total_payments, 'ARS')}</span>
+                  </div>
+                </div>
+              )}
               <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                 <button
                   onClick={() => handleUploadClick(card)}
@@ -294,6 +328,18 @@ export default function CardsPage() {
                   <FileText className="h-4 w-4" />
                   {t('cards.viewStatements')}
                 </button>
+                {card.card_mode === 'credit' && (
+                  <>
+                    <CardPaymentsModal card={card} onPaymentRecorded={() => fetchCardBalances(cards)} />
+                    <button
+                      onClick={() => { setSelectedCard(card); setShowPaymentsModal(true); }}
+                      className="btn-ghost w-full flex items-center justify-center gap-2 text-sm"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      {t('cardPayments.viewPayments')}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -615,6 +661,13 @@ export default function CardsPage() {
           </div>
         )}
       </Modal>
+      {showPaymentsModal && selectedCard && (
+        <CardPaymentsList
+          card={selectedCard}
+          isOpen={showPaymentsModal}
+          onClose={() => { setShowPaymentsModal(false); setSelectedCard(null); }}
+        />
+      )}
     </div>
   );
 }

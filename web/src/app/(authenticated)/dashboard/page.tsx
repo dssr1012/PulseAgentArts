@@ -7,7 +7,8 @@ import { useTranslation } from '@/i18n';
 import { apiClient } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import type { BalanceResponse, Transaction, Category } from '@/types';
-import { BalanceCards } from '@/components/dashboard/BalanceCards';
+import { BalanceCards } from '@/components/dashboard/BalanceCards'
+import { CashFlowCards } from '@/components/dashboard/CashFlowCards';;
 import { CategoryChart } from '@/components/dashboard/CategoryChart';
 import { TrendChart } from '@/components/dashboard/TrendChart';
 import { TransactionFeed } from '@/components/dashboard/TransactionFeed';
@@ -171,6 +172,7 @@ export default function DashboardPage() {
       </div>
 
       <BalanceCards balance={balance} />
+        <CashFlowCards balance={balance} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CategoryChart
