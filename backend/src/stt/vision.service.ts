@@ -109,13 +109,39 @@ Return ONLY valid JSON, no markdown:
         merchantName: parsed.merchantName || undefined,
         paymentMethod: parsed.paymentMethod || "cash",
         cardIdentifier: parsed.cardIdentifier || undefined,
-        transactionDate: parsed.transactionDate || undefined,
+        transactionDate: this.parseDate(parsed.transactionDate),
         confidence: parseFloat(parsed.confidence) || 0,
       };
     } catch (err) {
       this.logger.error(`Vision extraction failed: ${(err as Error).message}`);
       return null;
     }
+  }
+
+  private parseDate(raw: any): string | undefined {
+    if (!raw || raw === "null" || raw === null) return undefined;
+    const str = String(raw).trim();
+
+    let date: Date | null = null;
+
+    const iso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(T.*)?$/);
+    if (iso) {
+      date = new Date(str);
+    } else {
+      const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (dmy) {
+        let year = parseInt(dmy[3], 10);
+        if (year < 100) year += 2000;
+        date = new Date(year, parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10));
+      }
+    }
+
+    if (!date || isNaN(date.getTime())) {
+      this.logger.warn(`Invalid transactionDate from vision: "${str}", using current date`);
+      return undefined;
+    }
+
+    return date.toISOString();
   }
 
   private parseAmount(raw: any): number {
